@@ -16,7 +16,7 @@ public class Regalo {
 		this.x = x;
 		this.y = y;
 		this.e = e;
-		this.escala = 0.3;
+		this.escala = 0.22;
 		this.img = Herramientas.cargarImagen("Imagenes/regalo2.gif");
 	}
 		
@@ -24,7 +24,7 @@ public class Regalo {
 		{
 			for (int k = 0; k < 5; k++) 
 			{
-	            double posY = this.y + k * 94;
+	            double posY = this.y + k * 93.6;
 	            e.dibujarImagen(img, this.x, posY, 0, escala);
 			}
 		}
