@@ -8,7 +8,7 @@ import entorno.Herramientas;
 public class BolaFuego {
 	
 	double x, y, escala, dx;
-	Image img;
+	Image img, imgDaño;
 	Entorno e;
 	
 	
@@ -20,6 +20,7 @@ public class BolaFuego {
 		this.img = Herramientas.cargarImagen("Imagenes/bola_fuego.gif");
 		this.escala = 0.38;
 		this.dx = 2;
+		this.imgDaño = Herramientas.cargarImagen("Imagenes/impacto.gif");
 	}
 	
 	public void dibujar()
@@ -31,6 +32,7 @@ public class BolaFuego {
 	{
 		this.x += dx;
 	}
+	
 	
 
 }

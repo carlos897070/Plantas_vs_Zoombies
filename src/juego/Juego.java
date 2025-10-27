@@ -3,10 +3,12 @@ package juego;
 
 import java.awt.Color;
 import java.awt.Image;
+import java.util.Arrays;
 
 import entorno.Entorno;
 import entorno.Herramientas;
 import entorno.InterfaceJuego;
+
 
 public class Juego extends InterfaceJuego
 {
@@ -16,10 +18,11 @@ public class Juego extends InterfaceJuego
 	
 	private Entorno entorno;
 	Cuadricula c;
-	Image fondoInterno, panelSuperior;
+	Image fondoInterno, panelSuperior, cartelInfo, zombieSuperior1;
 	int ancho, alto;
 	
 	Regalo reg;
+	Explosion[] explosiones;
 	
 	Planta[] fuego;
 	BolaFuego[] bolas;
@@ -32,9 +35,27 @@ public class Juego extends InterfaceJuego
 	BolaAzul[] bolasAzul;
 	Huracol huracolTomada = null;
 	
+	Zombie[] zombies;
+	ZombieBart[] zombiesBart;
+	ZombieCerebro[] zombiesCerebros;
 	
+	//Banderas temporales para creacion y eliminacion de zombies
+	double tiempoUltimoCreado, intervaloCreacion;
+	double tiempoUltimoCreadoBart, intervaloCreacionBart;
+	double tiempoUltimoCreadoCerebro, intervaloCreacionCerebro;
 	
+	int zombiesEliminados;
+	int zombiesRestantes;
 	
+	// ---- Control de tiempo del juego ----
+	double tiempoJuego;           // Tiempo jugado real (en segundos)
+	double tiempoUltimoTick;      // Guarda el tiempo del entorno en el último frame
+	
+	//Banderas booleanas de estado del juego
+	boolean jugando = true;
+	boolean pausado = false;
+	boolean gameOver = false;
+	boolean ganaste = false;
 	
 	
 	
@@ -44,7 +65,7 @@ public class Juego extends InterfaceJuego
 		// Inicializa el objeto entorno
 		this.ancho = 1200;
 		this.alto = 600;
-		this.entorno = new Entorno(this, "Proyecto para TP", ancho, alto);
+		this.entorno = new Entorno(this, "Plantas vs Zombies - Versión Iturri 1.0.1", ancho, alto);
 		
 		// Inicializar lo que haga falta para el juego
 		// ...
@@ -57,9 +78,14 @@ public class Juego extends InterfaceJuego
 		//Cargar imagenes de fondo y banner superior
 		this.fondoInterno = Herramientas.cargarImagen("Imagenes/casaFondo2.jpg");
 		this.panelSuperior = Herramientas.cargarImagen("Imagenes/banner6.jpg");
+		this.cartelInfo = Herramientas.cargarImagen("Imagenes/imagen1.png");
+		this.zombieSuperior1 = Herramientas.cargarImagen("Imagenes/zoombie0.png");
 		
 		//Cargar regalos
 		this.reg = new Regalo(160,178,entorno);
+		
+		//Explosiones
+		this.explosiones = new Explosion[50];
 		
 		//Plantas superPlanta
 		this.huracoles = new Huracol[20];
@@ -74,17 +100,37 @@ public class Juego extends InterfaceJuego
 		fuego[0] = new Planta(160, 68, entorno);
 		
 		//Cargar disparos de plantas
-		this.bolas = new BolaFuego[500];
-		this.bolasAzul = new BolaAzul[500];
+		this.bolas = new BolaFuego[50];
+		this.bolasAzul = new BolaAzul[50];
+		
+		//Variables temporales para la creacion de zombies
+		this.zombies = new Zombie[20];
+		this.zombiesBart = new ZombieBart[20];
+		this.zombiesCerebros = new ZombieCerebro[20];
+		this.intervaloCreacion = 5;
+		this.tiempoUltimoCreado = 0;
+		this.intervaloCreacionBart = 7;
+		this.tiempoUltimoCreadoBart = 0;
+		this.intervaloCreacionCerebro = 17;
+		this.tiempoUltimoCreadoCerebro = 0;
+		this.zombiesEliminados = 0;
+		this.zombiesRestantes = 50;
+		
+		this.tiempoJuego = 0;
 		
 		// Inicia el juego!
 		this.entorno.iniciar();
+		//Inicio el tiempo del ultimo tick usando el tiempo del entorno
+		this.tiempoUltimoTick = entorno.tiempo() / 1000.0;
 		
 		//Info de celdas
 		double ancho = c.getAnchoCelda();
 		double alto = c.getAltoCelda();
 		System.out.println("Ancho de celda: " + ancho);
 		System.out.println("Alto de celda: " + alto);
+		
+		//Imprimo info de fuentes disponibles
+		System.out.println(Arrays.toString(entorno.fontDisponibles));
 	}
 
 	
@@ -100,16 +146,128 @@ public class Juego extends InterfaceJuego
 		// Procesamiento de un instante de tiempo
 		// ...
 		
+		// --- Actualizar el tiempo del juego ---
+		double tiempoActualEntorno = entorno.tiempo() / 1000.0;
+		double deltaTiempo = tiempoActualEntorno - this.tiempoUltimoTick;
+
+		// Solo avanza si el juego está en curso
+		if (jugando) {
+		    this.tiempoJuego += deltaTiempo;
+		}
+
+		// Registrar el tiempo actual para el próximo frame
+		this.tiempoUltimoTick = tiempoActualEntorno;
+		
+		
+		//Variable que me da el tiempo actual en segundos
+		double tiempoActual = this.tiempoJuego; // tiempo en segundos
+		double tiempoActualZombie = this.tiempoJuego; // tiempo en segundos
+		int tiempoMostrado = (int) this.tiempoJuego;
+		
+		
+		
 		//Dibujo el fondo interno, casa que se ve en el lateral izquierdo del entorno
-		entorno.dibujarImagen(fondoInterno, ancho/2 -100, alto/2, 0, 1.2);
+		entorno.dibujarImagen(fondoInterno, ancho/2 -70, alto/2, 0, 1.35);
+		
+		
+		// --- CONTROL DE ESTADOS DEL JUEGO ---
+				Color fondoEstado = new Color(0, 0, 0, 180);
+
+				// --- PAUSA ---
+				if (pausado) {
+				    entorno.dibujarRectangulo(ancho / 2, alto / 2, ancho, alto, 0, fondoEstado);
+				    entorno.cambiarFont("Arial Rounded MT Bold", 70, Color.YELLOW);
+				    entorno.escribirTexto("PAUSA", ancho / 2 - 120, alto / 2);
+				    entorno.cambiarFont("Bookman Old Style", 30, Color.LIGHT_GRAY);
+				    entorno.escribirTexto("Presiona P para continuar", ancho / 2 - 180, alto / 2 + 80);
+
+				    // Reanudar el juego
+				    if (entorno.sePresiono('p')) {
+				        pausado = false;
+				        jugando = true;
+				    }
+				    return; // Detiene el resto del tick mientras está pausado
+				}
+
+				// --- GAME OVER ---
+				if (gameOver) {
+				    entorno.dibujarRectangulo(ancho / 2, alto / 2, ancho, alto, 0, fondoEstado);
+				    entorno.cambiarFont("Arial Rounded MT Bold", 70, Color.WHITE);
+				    entorno.escribirTexto("GAME OVER", ancho / 2 - 220, alto / 2);
+				    entorno.cambiarFont("Bookman Old Style", 30, Color.LIGHT_GRAY);
+				    entorno.escribirTexto("Presiona R para reiniciar", ancho / 2 - 190, alto / 2 + 80);
+
+				    if (entorno.sePresiono('r')) {
+				        reiniciarJuego();
+				    }
+				    return;
+				}
+
+				// --- GANASTE ---
+				if (ganaste) {
+				    entorno.dibujarRectangulo(ancho / 2, alto / 2, ancho, alto, 0, fondoEstado);
+				    entorno.cambiarFont("Arial Rounded MT Bold", 70, Color.GREEN);
+				    entorno.escribirTexto("¡GANASTE!", ancho / 2 - 200, alto / 2);
+				    entorno.cambiarFont("Bookman Old Style", 30, Color.LIGHT_GRAY);
+				    entorno.escribirTexto("Presiona R para jugar de nuevo", ancho / 2 - 230, alto / 2 + 80);
+
+				    if (entorno.sePresiono('r')) {
+				        reiniciarJuego();
+				    }
+				    return;
+				}
+
+				// --- ACTIVAR PAUSA DESDE EL JUEGO ---
+				if (jugando && entorno.sePresiono('p')) {
+				    pausado = true;
+				    jugando = false;
+				    return;
+				}
+		
+		
+		
 		//Dibujo panel superior
 		entorno.dibujarImagen(panelSuperior, (ancho/2)+54, 60, 0, 0.57);
 		//Dibujo la cuadricula
 		c.dibujar();
 		//Dibujo los regalos
 		reg.dibujar();
-		//Variable que me da el tiempo actual en segundos
-		double tiempoActual = entorno.tiempo() / 1000.0; // tiempo en segundos
+		//Dibujo cartel
+		entorno.dibujarImagen(cartelInfo, ancho/2 +50, 65, 0, 0.36);
+		entorno.cambiarFont("Bookman Old Style", 17, Color.WHITE, entorno.NEGRITA);
+		entorno.escribirTexto("Tiempo de juego: " + tiempoMostrado, ancho/2 -55, 30);
+		entorno.escribirTexto("Zombies Eliminados: " + this.zombiesEliminados, ancho/2 -55, 70);
+		entorno.escribirTexto("Zombies restantes: " + this.zombiesRestantes, ancho/2 -55, 110);
+		
+		entorno.dibujarImagen(zombieSuperior1, (c.x + c.ancho*7)-10, 80, 0, 0.2);
+		
+		
+
+		// --- Verificar si algún zombie toca la casa ---
+		if (jugando) {
+		    for (Zombie z : zombies) {
+		        if (z != null && z.x <= reg.x + 30) {
+		            gameOver = true;
+		            jugando = false;
+		        }
+		    }
+		    for (ZombieBart z : zombiesBart) {
+		        if (z != null && z.x <= reg.x + 30) {
+		            gameOver = true;
+		            jugando = false;
+		        }
+		    }
+		    for (ZombieCerebro z : zombiesCerebros) {
+		        if (z != null && z.x <= reg.x + 30) {
+		            gameOver = true;
+		            jugando = false;
+		        }
+		    }
+		}
+		
+		
+		
+		
 		
 		
 		// ----- Seccion huracoles -----
@@ -265,6 +423,123 @@ public class Juego extends InterfaceJuego
 			        }
 			    }
 			}
+		}
+		
+		
+		
+		// ---------- Seccion explosion de nueces y colision con zombies----------------
+		
+		for (int k = 0; k < nueces.length; k++) 
+		{
+			 if (nueces[k] != null && nueces[k].plantada) 
+			 {
+				 	//Colision con zombies comunes
+			        for (int j = 0; j < zombies.length; j++) 
+			        {
+			            if (zombies[j] != null) 
+			            {
+			                double dist = Math.sqrt(Math.pow(nueces[k].x - zombies[j].x, 2) + Math.pow(nueces[k].y - zombies[j].y, 2));
+
+			                if (dist < 30) 
+			                {
+			                	double[] centro = c.obtenerCentroCeldaMasCercana(nueces[k].x, nueces[k].y);
+			                	
+			                	for (int e = 0; e < explosiones.length; e++) 
+			                	{
+			                	    if (explosiones[e] == null) 
+			                	    {
+			                	        explosiones[e] = new Explosion(centro[0], centro[1]-40, entorno);
+			                	        break;
+			                	    }
+			                	}
+			                	nueces[k] = null;
+			                	zombies[j] = null;
+			                	this.zombiesEliminados++;
+			                	this.zombiesRestantes--;
+			                	break;
+			               }
+			           }
+			       }
+			 }
+		}
+		
+		for (int k = 0; k < nueces.length; k++) 
+		{
+			 if (nueces[k] != null && nueces[k].plantada) 
+			 {
+				 	//Colision con zombies comunes
+			        for (int j = 0; j < zombiesBart.length; j++) 
+			        {
+			            if (zombiesBart[j] != null) 
+			            {
+			                double dist = Math.sqrt(Math.pow(nueces[k].x - zombiesBart[j].x, 2) + Math.pow(nueces[k].y - zombiesBart[j].y, 2));
+
+			                if (dist < 30) 
+			                {
+			                	double[] centro = c.obtenerCentroCeldaMasCercana(nueces[k].x, nueces[k].y);
+			                	
+			                	for (int e = 0; e < explosiones.length; e++) 
+			                	{
+			                	    if (explosiones[e] == null) 
+			                	    {
+			                	        explosiones[e] = new Explosion(centro[0], centro[1]-40, entorno);
+			                	        break;
+			                	    }
+			                	}
+			                	nueces[k] = null;
+			                	zombiesBart[j] = null;
+			                	this.zombiesEliminados++;
+			                	this.zombiesRestantes--;
+			                	break;
+			               }
+			           }
+			       }
+			 }
+		}
+		
+		
+		for (int k = 0; k < nueces.length; k++) 
+		{
+			 if (nueces[k] != null && nueces[k].plantada) 
+			 {
+				 	//Colision con zombies comunes
+			        for (int j = 0; j < zombiesCerebros.length; j++) 
+			        {
+			            if (zombiesCerebros[j] != null) 
+			            {
+			                double dist = Math.sqrt(Math.pow(nueces[k].x - zombiesCerebros[j].x, 2) + Math.pow(nueces[k].y - zombiesCerebros[j].y, 2));
+
+			                if (dist < 30) 
+			                {
+			                	double[] centro = c.obtenerCentroCeldaMasCercana(nueces[k].x, nueces[k].y);
+			                	
+			                	for (int e = 0; e < explosiones.length; e++) 
+			                	{
+			                	    if (explosiones[e] == null) 
+			                	    {
+			                	        explosiones[e] = new Explosion(centro[0], centro[1]-40, entorno);
+			                	        break;
+			                	    }
+			                	}
+			                	nueces[k] = null;
+			                	zombiesCerebros[j] = null;
+			                	this.zombiesEliminados++;
+			                	this.zombiesRestantes--;
+			                	break;
+			               }
+			           }
+			       }
+			 }
+		}
+		
+		
+		for (int e = 0; e < explosiones.length; e++) {
+		    if (explosiones[e] != null) {
+		        explosiones[e].dibujar(entorno);
+		        if (explosiones[e].expirada()) {
+		            explosiones[e] = null;
+		        }
+		    }
 		}
 		
 		
@@ -461,9 +736,108 @@ public class Juego extends InterfaceJuego
 			}
 		}
 		
-		    
 		
-		// ----- Seccion disparos de plantas
+		
+		
+		// ----- Seccion Zombies ----- 
+		
+		
+		//Zombies comunes
+		if(tiempoActualZombie - this.tiempoUltimoCreado >= this.intervaloCreacion)
+			
+		for(int j = 0; j < zombies.length; j++)
+		{
+			if(zombies[j] == null)
+			{
+				int fila = (int) (Math.random() * 5); 
+	            double yZombie = c.y + fila * c.getAltoCelda() - 10;
+				
+				zombies[j] = new Zombie(1200, yZombie, entorno);
+				this.tiempoUltimoCreado = tiempoActualZombie;
+				break;
+			}
+		}
+		
+		// Mover y dibujar todos los zombies existentes
+		for (int j = 0; j < zombies.length; j++) {
+		    Zombie z = zombies[j];
+		    if (z != null) {
+		        z.mover();
+		        z.dibujar();
+
+		        // Si sale del entorno por la izquierda, lo eliminamos
+		        if (z.x < 0) {
+		            zombies[j] = null;
+		        }
+		    }
+		}
+		
+		
+		//Zombies Cerebros
+		if(tiempoActualZombie - this.tiempoUltimoCreadoCerebro >= this.intervaloCreacionCerebro)
+			
+			for(int j = 0; j < zombiesCerebros.length; j++)
+			{
+				if(zombiesCerebros[j] == null)
+				{
+					int fila = (int) (Math.random() * 5); 
+		            double yZombie = c.y + fila * c.getAltoCelda()-10;
+					
+					zombiesCerebros[j] = new ZombieCerebro(1200, yZombie, entorno);
+					this.tiempoUltimoCreadoCerebro = tiempoActualZombie;
+					break;
+				}
+			}
+			
+			// Mover y dibujar todos los zombies existentes
+			for (int j = 0; j < zombiesCerebros.length; j++) {
+			    ZombieCerebro z = zombiesCerebros[j];
+			    if (z != null) {
+			        z.mover();
+			        z.dibujar();
+
+			        // Si sale del entorno por la izquierda, lo eliminamos
+			        if (z.x < 0) {
+			            zombiesCerebros[j] = null;
+			        }
+			    }
+			}
+			
+			
+			//Zombies Bart
+			if(tiempoActualZombie - this.tiempoUltimoCreadoBart >= this.intervaloCreacionBart)
+				
+				for(int j = 0; j < zombiesBart.length; j++)
+				{
+					if(zombiesBart[j] == null)
+					{
+						int fila = (int) (Math.random() * 5); 
+			            double yZombie = c.y + fila * c.getAltoCelda() - 15;
+						
+						zombiesBart[j] = new ZombieBart(1200, yZombie, entorno);
+						this.tiempoUltimoCreadoBart = tiempoActualZombie;
+						break;
+					}
+				}
+				
+				// Mover y dibujar todos los zombies existentes
+				for (int j = 0; j < zombiesBart.length; j++) {
+				    ZombieBart z = zombiesBart[j];
+				    if (z != null) {
+				        z.mover();
+				        z.dibujar();
+
+				        // Si sale del entorno por la izquierda, lo eliminamos
+				        if (z.x < 0) {
+				            zombiesBart[j] = null;
+				        }
+				    }
+				}
+
+		
+			    
+		
+		// ----- Seccion disparos de plantas ------
 		
 		
 		//Bolas de fuego
@@ -482,7 +856,7 @@ public class Juego extends InterfaceJuego
 	        }
 	    }
 			
-		//Movimiento de disparo
+		//Movimiento de disparo bola de fuego
 		for(int k = 0; k < bolas.length; k++)
 		{
 			BolaFuego b = bolas[k];
@@ -494,7 +868,68 @@ public class Juego extends InterfaceJuego
 		        if (b.x > ancho) {
 		            bolas[k] = null;
 		        }
-			}
+	        for(int j = 0; j < zombies.length; j++)
+	        {
+	        	if(zombies[j] != null)
+	        	{
+	        		double dist = Math.sqrt( Math.pow(b.x - zombies[j].x, 2) + Math.pow(b.y - zombies[j].y, 2) );
+	        		if(dist < 20)
+	        		{
+	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+	        			zombies[j].vida -=2;
+	        			if(zombies[j].vida == 0)
+	        			{
+	        				zombies[j] = null;
+	        				this.zombiesEliminados+=1;
+	        				this.zombiesRestantes--;
+	        			}
+	        			bolas[k] = null;
+	        			      		
+	        		}
+	        	}
+		     }
+	        for(int j = 0; j < zombiesBart.length; j++)
+	        {
+	        	if(zombiesBart[j] != null)
+	        	{
+	        		double dist = Math.sqrt( Math.pow(b.x - zombiesBart[j].x, 2) + Math.pow(b.y - zombiesBart[j].y, 2) );
+	        		if(dist < 20)
+	        		{
+	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+	        			zombiesBart[j].vida -=2;
+	        			if(zombiesBart[j].vida == 0)
+	        			{
+	        				zombiesBart[j] = null;
+	        				this.zombiesEliminados+=1;
+	        				this.zombiesRestantes--;
+	        			}
+	        			bolas[k] = null;
+	        			      		
+	        		}
+	        	}
+		     }
+	        for(int j = 0; j < zombiesCerebros.length; j++)
+	        {
+	        	if(zombiesCerebros[j] != null)
+	        	{
+	        		double dist = Math.sqrt( Math.pow(b.x - zombiesCerebros[j].x, 2) + Math.pow(b.y - zombiesCerebros[j].y, 2) );
+	        		if(dist < 20)
+	        		{
+	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+	        			zombiesCerebros[j].vida -=2;
+	        			if(zombiesCerebros[j].vida == 0)
+	        			{
+	        				zombiesCerebros[j] = null;	
+	        				this.zombiesEliminados+=1;
+	        				this.zombiesRestantes--;
+	        			}
+	        			bolas[k] = null;
+	        			      		
+	        		}
+	        	}
+		     }
+	        
+		     }
 			
 		}
 		
@@ -527,15 +962,110 @@ public class Juego extends InterfaceJuego
 		        if (b.x > ancho) {
 		            bolasAzul[k] = null;
 		        }
-			}
-			
+		        
+	        for(int j = 0; j < zombies.length; j++)
+	        {
+	        	if(zombies[j] != null)
+	        	{
+	        		double dist = Math.sqrt( Math.pow(b.x - zombies[j].x, 2) + Math.pow(b.y - zombies[j].y, 2) );
+	        		if(dist < 20)
+	        		{
+	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+	        			zombies[j].vida -=2;
+	        			if(zombies[j].vida == 0)
+	        			{
+	        				zombies[j] = null;	
+	        				this.zombiesEliminados+=1;
+	        				this.zombiesRestantes--;
+	        			}
+	        			bolasAzul[k] = null;      		
+	        		}
+	        	}
+		     }
+	        for(int j = 0; j < zombiesBart.length; j++)
+	        {
+	        	if(zombiesBart[j] != null)
+	        	{
+	        		double dist = Math.sqrt( Math.pow(b.x - zombiesBart[j].x, 2) + Math.pow(b.y - zombiesBart[j].y, 2) );
+	        		if(dist < 20)
+	        		{
+	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+	        			zombiesBart[j].vida -=2;
+	        			if(zombiesBart[j].vida == 0)
+	        			{
+	        				zombiesBart[j] = null;
+	        				this.zombiesEliminados+=1;
+	        				this.zombiesRestantes--;
+	        			}
+	        			bolasAzul[k] = null;      		
+	        		}
+	        	}
+		     } 
+	        for(int j = 0; j < zombiesCerebros.length; j++)
+	        {
+	        	if(zombiesCerebros[j] != null)
+	        	{
+	        		double dist = Math.sqrt( Math.pow(b.x - zombiesCerebros[j].x, 2) + Math.pow(b.y - zombiesCerebros[j].y, 2) );
+	        		if(dist < 20)
+	        		{
+	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+	        			zombiesCerebros[j].vida -=2;
+	        			if(zombiesCerebros[j].vida == 0)
+	        			{
+	        				zombiesCerebros[j] = null;
+	        				this.zombiesEliminados+=1;
+	        				this.zombiesRestantes--;
+	        			}
+	        			bolasAzul[k] = null;
+	        			      		
+	        		}
+	        	}
+		     }
+	        
 		}
-		
-		
+		}
+	
+		//Condicion para ganar el juego
+		if (jugando && (zombiesEliminados == 50)) {
+		    ganaste = true;
+		    jugando = false;
+		}
 		
 	}
 	
 	
+	public void reiniciarJuego() {
+	    // Limpio plantas, zombies, disparos y explosiones
+	    Arrays.fill(fuego, null);
+	    Arrays.fill(nueces, null);
+	    Arrays.fill(huracoles, null);
+	    Arrays.fill(bolas, null);
+	    Arrays.fill(bolasAzul, null);
+	    Arrays.fill(zombies, null);
+	    Arrays.fill(zombiesBart, null);
+	    Arrays.fill(zombiesCerebros, null);
+	    Arrays.fill(explosiones, null);
+
+	    // Reaparezco las plantas base del panel
+	    fuego[0] = new Planta(160, 68, entorno);
+	    nueces[0] = new Nuez(269.6, 88, entorno);
+	    huracoles[0] = new Huracol(378, 84, entorno);
+
+	    // Reseteo variables
+	    this.zombiesEliminados = 0;
+	    this.tiempoUltimoCreado = 0;
+	    this.tiempoUltimoCreadoBart = 0;
+	    this.tiempoUltimoCreadoCerebro = 0;
+	    this.zombiesRestantes = 50;
+	    tiempoJuego = 0;
+	    tiempoUltimoTick = entorno.tiempo() / 1000.0;
+
+	 // Restauro banderas
+	    jugando = true;
+	    pausado = false;
+	    gameOver = false;
+	    ganaste = false;
+	}
 	
 
 	@SuppressWarnings("unused")

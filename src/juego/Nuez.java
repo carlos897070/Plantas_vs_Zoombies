@@ -9,7 +9,7 @@ import entorno.Herramientas;
 public class Nuez {
 
 	double x, y, escala, dxA;
-	Image img;
+	Image img, exp;
 	Entorno e;
 	boolean seleccion, plantada, seleccionadaParaMover;
 	Color colorSeleccion;
@@ -19,6 +19,7 @@ public class Nuez {
 		this.y = y;
 		this.e = e;
 		this.img = Herramientas.cargarImagen("Imagenes/nuez.gif");
+		this.exp = Herramientas.cargarImagen("Imagenes/explosion.gif");
 		this.escala = 0.29;
 		this.seleccion = false;
 		this.plantada = false;
