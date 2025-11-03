@@ -39,13 +39,14 @@ public class Cuadricula {
 	
     }
 	public double[] obtenerCentroCeldaMasCercana(double mouseX, double mouseY) {
+		
 	    double[] centroMasCercano = new double[2];
 
 	    for (int i = 0; i < 10; i++) {
 	        for (int k = 0; k < 5; k++) {
 	            // centro de cada celda
-	            double cx = x + i * ancho;
-	            double cy = y + k * alto;
+	            double cx = this.x + i * this.ancho;
+	            double cy = this.y + k * this.alto;
 
 	            double dist = Math.sqrt(Math.pow(mouseX - cx, 2) + Math.pow(mouseY - cy, 2));
 
@@ -128,6 +129,26 @@ public class Cuadricula {
 	            // Si la distancia entre el centro de la celda y la planta es muy chica,
 	            // consideramos que está ocupada
 	            double dist = Math.sqrt(Math.pow(h.x - cx, 2) + Math.pow(h.y - cy, 2));
+	            if (dist < this.alto / 2) {
+	                return true;
+	            }
+	        }
+	    }
+	    return false;
+	}
+	
+	public boolean celdaOcupadaTumba(double cx, double cy, Tumba[] tumbas) {
+		//Aca digo que siempre la columna de los regalos va a estar ocupada
+		if(cx < 160 + this.ancho/2)
+		{
+			return true;
+		}
+	    for (Tumba t : tumbas) {
+	        if (t != null && t.enterrada) {
+	            // Si la distancia entre el centro de la celda y la planta es muy chica,
+	            // consideramos que está ocupada
+	            double dist = Math.sqrt(Math.pow(t.x - cx, 2) + Math.pow(t.y - cy, 2));
+	            
 	            if (dist < this.alto / 2) {
 	                return true;
 	            }

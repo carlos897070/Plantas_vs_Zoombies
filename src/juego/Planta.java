@@ -8,7 +8,7 @@ import entorno.Herramientas;
 
 public class Planta {
 	
-	double x, y, escala, tiempoUltimoDisparo, intervaloDisparo, dxA;
+	double x, y, escala, tiempoUltimoDisparo, intervaloDisparo, dxA, vida;
 	Entorno e;
 	Image img;
 	boolean seleccion, plantada, seleccionadaParaMover;
@@ -28,6 +28,7 @@ public class Planta {
 		this.seleccionadaParaMover = false;
 		this.colorSeleccion = new Color(250, 0, 0, 120);
 		this.dxA = 0;
+		this.vida = 20;
 	}
 	
 	public double rotacionSeleccion()

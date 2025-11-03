@@ -18,7 +18,11 @@ public class Juego extends InterfaceJuego
 	
 	private Entorno entorno;
 	Cuadricula c;
-	Image fondoInterno, panelSuperior, cartelInfo, zombieSuperior1;
+	
+	Image fondoInterno, panelSuperior, cartelInfo, 
+	zombieSuperior1, zombieSuperior2, zombieSuperior3, 
+	recarga, cargandoHuracol, cargandoFuego, cargandoNuez;
+	
 	int ancho, alto;
 	
 	Regalo reg;
@@ -38,18 +42,29 @@ public class Juego extends InterfaceJuego
 	Zombie[] zombies;
 	ZombieBart[] zombiesBart;
 	ZombieCerebro[] zombiesCerebros;
+	ZombieColosal colosal;
+	
+	Tumba [] tumbas;
+	ProyectilZombie [] energia;
 	
 	//Banderas temporales para creacion y eliminacion de zombies
 	double tiempoUltimoCreado, intervaloCreacion;
 	double tiempoUltimoCreadoBart, intervaloCreacionBart;
 	double tiempoUltimoCreadoCerebro, intervaloCreacionCerebro;
 	
-	int zombiesEliminados;
-	int zombiesRestantes;
+	int zombiesEliminados, zombiesRestantes, zombiesCreados;
+	
 	
 	// ---- Control de tiempo del juego ----
 	double tiempoJuego;           // Tiempo jugado real (en segundos)
 	double tiempoUltimoTick;      // Guarda el tiempo del entorno en el último frame
+	
+	// Control de recarga de planta en panel
+	double ultimaPlantadaHuracol, intervaloPlantarHuracol, 
+	ultimaPlantadaPlanta, intervaloPlantarPlanta, 
+	ultimaPlantadaNuez, intervaloPlantarNuez;
+	
+	boolean esperandoRecargaHuracol, esperandoRecargaPlanta, esperandoRecargaNuez;
 	
 	//Banderas booleanas de estado del juego
 	boolean jugando = true;
@@ -73,13 +88,24 @@ public class Juego extends InterfaceJuego
 		//Cargar Cuadricula
 		this.c = new Cuadricula(160,178,entorno);
 		//Info de coordenadas de cuadricula
-		c.imprimirCoordenadasCeldas();
+		//c.imprimirCoordenadasCeldas();
 		
 		//Cargar imagenes de fondo y banner superior
 		this.fondoInterno = Herramientas.cargarImagen("Imagenes/casaFondo2.jpg");
 		this.panelSuperior = Herramientas.cargarImagen("Imagenes/banner6.jpg");
 		this.cartelInfo = Herramientas.cargarImagen("Imagenes/imagen1.png");
+		
+		// Imagenes superiores de los zombies
 		this.zombieSuperior1 = Herramientas.cargarImagen("Imagenes/zoombie0.png");
+		this.zombieSuperior2 = Herramientas.cargarImagen("Imagenes/bartZombiePng.png");
+		this.zombieSuperior3 = Herramientas.cargarImagen("Imagenes/cerebroZombiePng.png");
+		
+		// Imagen superior de spiner de carga
+		this.recarga = Herramientas.cargarImagen("Imagenes/loading2.gif");
+		// Imagenes superiores de las plantas en recarga
+		this.cargandoHuracol = Herramientas.cargarImagen("Imagenes/huracolCargando.png");
+		this.cargandoNuez = Herramientas.cargarImagen("Imagenes/nuezCargando.png");
+		this.cargandoFuego = Herramientas.cargarImagen("Imagenes/fuegoCargando.png");
 		
 		//Cargar regalos
 		this.reg = new Regalo(160,178,entorno);
@@ -97,7 +123,7 @@ public class Juego extends InterfaceJuego
 		
 		//Plantas lanzaFuego
 		this.fuego = new Planta[20];
-		fuego[0] = new Planta(160, 68, entorno);
+		fuego[0] = new Planta(170, 68, entorno);
 		
 		//Cargar disparos de plantas
 		this.bolas = new BolaFuego[50];
@@ -115,19 +141,40 @@ public class Juego extends InterfaceJuego
 		this.tiempoUltimoCreadoCerebro = 0;
 		this.zombiesEliminados = 0;
 		this.zombiesRestantes = 50;
+		this.zombiesCreados = 0;		
+		this.colosal = new ZombieColosal(1400, alto/2+30, entorno);
+		this.energia = new ProyectilZombie[10];
 		
+		// Arreglo de tumbas
+		this.tumbas = new Tumba[20];
+		
+		// Variables de control para creacion de plantas
+		this.ultimaPlantadaHuracol = 0;
+		this.intervaloPlantarHuracol = 1;
+		this.esperandoRecargaHuracol = false;
+		
+		this.ultimaPlantadaPlanta = 0;
+		this.intervaloPlantarPlanta = 1;
+		this.esperandoRecargaPlanta= false;
+		
+		this.ultimaPlantadaNuez = 0;
+		this.intervaloPlantarNuez = 1;
+		this.esperandoRecargaNuez = false;
+		
+		//Tiempo de juego transcurrido
 		this.tiempoJuego = 0;
 		
 		// Inicia el juego!
 		this.entorno.iniciar();
+		
 		//Inicio el tiempo del ultimo tick usando el tiempo del entorno
 		this.tiempoUltimoTick = entorno.tiempo() / 1000.0;
 		
 		//Info de celdas
-		double ancho = c.getAnchoCelda();
-		double alto = c.getAltoCelda();
-		System.out.println("Ancho de celda: " + ancho);
-		System.out.println("Alto de celda: " + alto);
+		//double ancho = c.getAnchoCelda();
+		//double alto = c.getAltoCelda();
+		//System.out.println("Ancho de celda: " + ancho);
+		//System.out.println("Alto de celda: " + alto);
 		
 		//Imprimo info de fuentes disponibles
 		System.out.println(Arrays.toString(entorno.fontDisponibles));
@@ -171,58 +218,58 @@ public class Juego extends InterfaceJuego
 		
 		
 		// --- CONTROL DE ESTADOS DEL JUEGO ---
-				Color fondoEstado = new Color(0, 0, 0, 180);
+		Color fondoEstado = new Color(0, 0, 0, 180);
 
-				// --- PAUSA ---
-				if (pausado) {
-				    entorno.dibujarRectangulo(ancho / 2, alto / 2, ancho, alto, 0, fondoEstado);
-				    entorno.cambiarFont("Arial Rounded MT Bold", 70, Color.YELLOW);
-				    entorno.escribirTexto("PAUSA", ancho / 2 - 120, alto / 2);
-				    entorno.cambiarFont("Bookman Old Style", 30, Color.LIGHT_GRAY);
-				    entorno.escribirTexto("Presiona P para continuar", ancho / 2 - 180, alto / 2 + 80);
+		// --- PAUSA ---
+		if (pausado) {
+		    entorno.dibujarRectangulo(ancho / 2, alto / 2, ancho, alto, 0, fondoEstado);
+		    entorno.cambiarFont("Arial Rounded MT Bold", 70, Color.YELLOW);
+		    entorno.escribirTexto("PAUSA", ancho / 2 - 120, alto / 2);
+		    entorno.cambiarFont("Bookman Old Style", 30, Color.LIGHT_GRAY);
+		    entorno.escribirTexto("Presiona P para continuar", ancho / 2 - 180, alto / 2 + 80);
 
-				    // Reanudar el juego
-				    if (entorno.sePresiono('p')) {
-				        pausado = false;
-				        jugando = true;
-				    }
-				    return; // Detiene el resto del tick mientras está pausado
-				}
+		    // Reanudar el juego
+		    if (entorno.sePresiono('p')) {
+		        pausado = false;
+		        jugando = true;
+		    }
+		    return; // Detiene el resto del tick mientras está pausado
+		}
 
-				// --- GAME OVER ---
-				if (gameOver) {
-				    entorno.dibujarRectangulo(ancho / 2, alto / 2, ancho, alto, 0, fondoEstado);
-				    entorno.cambiarFont("Arial Rounded MT Bold", 70, Color.WHITE);
-				    entorno.escribirTexto("GAME OVER", ancho / 2 - 220, alto / 2);
-				    entorno.cambiarFont("Bookman Old Style", 30, Color.LIGHT_GRAY);
-				    entorno.escribirTexto("Presiona R para reiniciar", ancho / 2 - 190, alto / 2 + 80);
+		// --- GAME OVER ---
+		if (gameOver) {
+		    entorno.dibujarRectangulo(ancho / 2, alto / 2, ancho, alto, 0, fondoEstado);
+		    entorno.cambiarFont("Arial Rounded MT Bold", 70, Color.MAGENTA);
+		    entorno.escribirTexto("GAME OVER", ancho / 2 - 220, alto / 2);
+		    entorno.cambiarFont("Bookman Old Style", 30, Color.LIGHT_GRAY);
+		    entorno.escribirTexto("Presiona R para reiniciar", ancho / 2 - 190, alto / 2 + 80);
 
-				    if (entorno.sePresiono('r')) {
-				        reiniciarJuego();
-				    }
-				    return;
-				}
+		    if (entorno.sePresiono('r')) {
+		        reiniciarJuego();
+		    }
+		    return;
+		}
 
-				// --- GANASTE ---
-				if (ganaste) {
-				    entorno.dibujarRectangulo(ancho / 2, alto / 2, ancho, alto, 0, fondoEstado);
-				    entorno.cambiarFont("Arial Rounded MT Bold", 70, Color.GREEN);
-				    entorno.escribirTexto("¡GANASTE!", ancho / 2 - 200, alto / 2);
-				    entorno.cambiarFont("Bookman Old Style", 30, Color.LIGHT_GRAY);
-				    entorno.escribirTexto("Presiona R para jugar de nuevo", ancho / 2 - 230, alto / 2 + 80);
+		// --- GANASTE ---
+		if (ganaste) {
+		    entorno.dibujarRectangulo(ancho / 2, alto / 2, ancho, alto, 0, fondoEstado);
+		    entorno.cambiarFont("Arial Rounded MT Bold", 70, Color.GREEN);
+		    entorno.escribirTexto("¡GANASTE!", ancho / 2 - 200, alto / 2);
+		    entorno.cambiarFont("Bookman Old Style", 30, Color.LIGHT_GRAY);
+		    entorno.escribirTexto("Presiona R para jugar de nuevo", ancho / 2 - 230, alto / 2 + 80);
 
-				    if (entorno.sePresiono('r')) {
-				        reiniciarJuego();
-				    }
-				    return;
-				}
+		    if (entorno.sePresiono('r')) {
+		        reiniciarJuego();
+		    }
+		    return;
+		}
 
-				// --- ACTIVAR PAUSA DESDE EL JUEGO ---
-				if (jugando && entorno.sePresiono('p')) {
-				    pausado = true;
-				    jugando = false;
-				    return;
-				}
+		// --- ACTIVAR PAUSA DESDE EL JUEGO ---
+		if (jugando && entorno.sePresiono('p')) {
+		    pausado = true;
+		    jugando = false;
+		    return;
+		}
 		
 		
 		
@@ -239,7 +286,30 @@ public class Juego extends InterfaceJuego
 		entorno.escribirTexto("Zombies Eliminados: " + this.zombiesEliminados, ancho/2 -55, 70);
 		entorno.escribirTexto("Zombies restantes: " + this.zombiesRestantes, ancho/2 -55, 110);
 		
+		
+		// Dibujar rectangulos contenedores de imagen superior de zombies
+		Color recZombie = new Color(80, 20, 80, 200);
+		Color recZombie1 = new Color(180, 50, 0, 200);
+		Color recZombie2 = new Color(180, 60, 80, 200);
+		
+		entorno.dibujarRectangulo((c.x + c.ancho*7), 65, c.ancho, c.y-(c.alto/2), 0, recZombie);
+		entorno.dibujarRectangulo((c.x + c.ancho*8)+0.2, 65, c.ancho, c.y-(c.alto/2), 0, recZombie1);
+		entorno.dibujarRectangulo((c.x + c.ancho*9), 65, c.ancho, c.y-(c.alto/2), 0, recZombie2);
+		
+		// Dibujar imagenes superiores de zombies
 		entorno.dibujarImagen(zombieSuperior1, (c.x + c.ancho*7)-10, 80, 0, 0.2);
+		entorno.dibujarImagen(zombieSuperior2, (c.x + c.ancho*8)-5, 80, 0, 0.2);
+		entorno.dibujarImagen(zombieSuperior3, (c.x + c.ancho*9), 85, 0, 0.3);
+		
+		// Dibujar rectangulos contenedores de imagen superior de plantas
+		Color recFuego = new Color(180, 20, 30, 200);
+		Color recNuez = new Color(180, 180, 30, 200);
+		Color recHuracol = new Color(20, 160, 20, 200);
+		
+		entorno.dibujarRectangulo((c.x), 65, c.ancho, c.y-(c.alto/2), 0, recFuego);
+		entorno.dibujarRectangulo((c.x + c.ancho*1), 65, c.ancho, c.y-(c.alto/2), 0, recNuez);
+		entorno.dibujarRectangulo((c.x + c.ancho*2), 65, c.ancho, c.y-(c.alto/2), 0, recHuracol);
+		
 		
 		
 
@@ -272,6 +342,8 @@ public class Juego extends InterfaceJuego
 		
 		// ----- Seccion huracoles -----
 		
+		
+		
 		//Dibujar huracoles
 		for(Huracol h: huracoles)
 		{
@@ -280,6 +352,12 @@ public class Juego extends InterfaceJuego
 				h.dibujar();
 			}
 			
+		}
+		
+		if(esperandoRecargaHuracol)
+		{
+			entorno.dibujarImagen(recarga, 378, 25, 0, 0.1);
+			entorno.dibujarImagen(cargandoHuracol, 378, 84, 0, 0.7);
 		}
 		
 		
@@ -320,34 +398,161 @@ public class Juego extends InterfaceJuego
 			            double[] centro = c.obtenerCentroCeldaMasCercana(entorno.mouseX(), entorno.mouseY());
 
 			            // Chequeo que la celda no esté ocupada
-			            if (!c.celdaOcupadaNuez(centro[0], centro[1], nueces) && !c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles)) {
+			            if (!c.celdaOcupadaNuez(centro[0], centro[1], nueces) && !c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles) && !c.celdaOcupadaTumba(centro[0], centro[1], tumbas)) {
 			            	huracol.nuevaPosicion(centro[0], centro[1]);
 			            	huracol.plantada = true;
-			             // Creo una nueva planta disponible en el panel
-				            for (int i = 0; i < huracoles.length; i++) {
-				                if (huracoles[i] == null) {
-				                    huracoles[i] = new Huracol(378, 84, entorno);
-				                    break;
-				                }
-				            }
+			            	this.ultimaPlantadaHuracol = this.tiempoJuego;
+			            	this.esperandoRecargaHuracol = true;
+			            	
 			            } else {
 			                // Si está ocupada, vuelve a su posición original
 			            	huracol.nuevaPosicion(378, 88);
 			            	huracol.plantada = false;
-			                huracolTomada = null;
+			                //huracolTomada = null;
 			            }
 
 			            // Libero la planta tomada
 			            huracolTomada = null;
-
 			            
 			        }
 			    }
 			}
 		}
 		
+		// Se crea despues de 5 segundos otra planta Huracol en panel
+		if(!hayPlantaHuracolPanel(huracoles) && esperandoRecargaHuracol)
+		{
+			if(tiempoJuego - ultimaPlantadaHuracol >= intervaloPlantarHuracol)
+			{
+				for (int i = 0; i < huracoles.length; i++) {
+		            if (huracoles[i] == null) {
+		                huracoles[i] = new Huracol(378, 84, entorno);
+		                this.esperandoRecargaHuracol = false;
+		                break;
+		            }
+		        }
+			}
+			
+		}
+		
+		
+		
+		//  ---------------- Colision de huracoles con zombies -------------------
+		
+		
+		
+		for (int k = 0; k < huracoles.length; k++) 
+		{
+			 if (huracoles[k] != null && huracoles[k].plantada) 
+			 {
+				 	//Colision con zombies comunes
+			        for (int j = 0; j < zombies.length; j++) 
+			        {
+			            if (zombies[j] != null) 
+			            {
+			                double dist = Math.sqrt(Math.pow(huracoles[k].x - zombies[j].x, 2) + Math.pow(huracoles[k].y - zombies[j].y, 2));
+
+			                if (dist < 30) 
+			                {
+			                	
+			                	huracoles[k].vida -= 0.5;
+			                	zombies[j].x += 5;
+			                	if(huracoles[k].vida == 0)
+					               {
+					            	   huracoles[k] = null;
+					               }
+			                	break;
+			               }
+			               
+			           }
+			       }
+			 }
+		}
+		
+		
+		for (int k = 0; k < huracoles.length; k++) 
+		{
+			 if (huracoles[k] != null && huracoles[k].plantada) 
+			 {
+				 	//Colision con zombies bart
+			        for (int j = 0; j < zombiesBart.length; j++) 
+			        {
+			            if (zombiesBart[j] != null) 
+			            {
+			                double dist = Math.sqrt(Math.pow(huracoles[k].x - zombiesBart[j].x, 2) + Math.pow(huracoles[k].y - zombiesBart[j].y, 2));
+
+			                if (dist < 30) 
+			                {
+			                	
+			                	huracoles[k].vida -= 0.5;
+			                	zombiesBart[j].x += 5;
+			                	if(huracoles[k].vida == 0)
+					               {
+					            	   huracoles[k] = null;
+					               }
+			                	break;
+			               }
+			               
+			           }
+			       }
+			 }
+		}
+		
+		
+		for (int k = 0; k < huracoles.length; k++) 
+		{
+			 if (huracoles[k] != null && huracoles[k].plantada) 
+			 {
+				 	//Colision con zombies cerebros
+			        for (int j = 0; j < zombiesCerebros.length; j++) 
+			        {
+			            if (zombiesCerebros[j] != null) 
+			            {
+			                double dist = Math.sqrt(Math.pow(huracoles[k].x - zombiesCerebros[j].x, 2) + Math.pow(huracoles[k].y - zombiesCerebros[j].y, 2));
+
+			                if (dist < 30) 
+			                {
+			                	
+			                	huracoles[k].vida -= 0.5;
+			                	zombiesCerebros[j].x += 5;
+			                	if(huracoles[k].vida == 0)
+					               {
+					            	   huracoles[k] = null;
+					               }
+			                	break;
+			               }
+			               
+			           }
+			       }
+			 }
+		}
+		
+		for (int k = 0; k < huracoles.length; k++) 
+		{
+			 if (huracoles[k] != null && huracoles[k].plantada) 
+			 {
+				 if(colosal != null)
+				 {
+					 double dist = Math.sqrt(Math.pow(huracoles[k].x - colosal.x, 2) + Math.pow(huracoles[k].y - colosal.y, 2));
+					 
+					 if (dist < 300 )
+		             {
+						 
+						 huracoles[k] = null;
+		            	 break;
+		             }
+				 }
+			 }
+		}
+		
+		
+		
+		
+		
 		
 		// ----- Seccion nueces -----
+		
+		
 		
 		
 		
@@ -359,6 +564,13 @@ public class Juego extends InterfaceJuego
 				n.dibujar();
 			}
 			
+		}
+		
+		
+		if(esperandoRecargaNuez)
+		{
+			entorno.dibujarImagen(recarga, 269.6, 25, 0, 0.1);
+			entorno.dibujarImagen(cargandoNuez, 269.6, 88, 0, 0.29);
 		}
 
 		
@@ -399,16 +611,12 @@ public class Juego extends InterfaceJuego
 			            double[] centro = c.obtenerCentroCeldaMasCercana(entorno.mouseX(), entorno.mouseY());
 
 			            // Chequeo que la celda no esté ocupada
-			            if (!c.celdaOcupadaNuez(centro[0], centro[1], nueces) && !c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles)) {
+			            if (!c.celdaOcupadaNuez(centro[0], centro[1], nueces) && !c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles) && !c.celdaOcupadaTumba(centro[0], centro[1], tumbas)) {
 			                nuez.nuevaPosicion(centro[0], centro[1]);
 			                nuez.plantada = true;
-			             // Creo una nueva planta disponible en el panel
-				            for (int i = 0; i < nueces.length; i++) {
-				                if (nueces[i] == null) {
-				                    nueces[i] = new Nuez(269.6, 88, entorno);
-				                    break;
-				                }
-				            }
+			                this.ultimaPlantadaNuez = this.tiempoJuego;
+			            	this.esperandoRecargaNuez = true;
+			            	
 			            } else {
 			                // Si está ocupada, vuelve a su posición original
 			                nuez.nuevaPosicion(265, 93);
@@ -425,9 +633,24 @@ public class Juego extends InterfaceJuego
 			}
 		}
 		
+		// Se crea despues de 5 segundos otra planta Nuez en panel
+		if(!hayPlantaNuezPanel(nueces) && esperandoRecargaNuez)
+		{
+			if(tiempoJuego - ultimaPlantadaNuez >= intervaloPlantarNuez)
+			{
+				for (int i = 0; i < nueces.length; i++) {
+		            if (nueces[i] == null) {
+		                nueces[i] = new Nuez(269.6, 88, entorno);
+		                this.esperandoRecargaNuez = false;
+		                break;
+		            }
+		        }
+			}
+			
+		}
 		
 		
-		// ---------- Seccion explosion de nueces y colision con zombies----------------
+		// ---------- Seccion explosion de nueces y colision con zombies ----------------
 		
 		for (int k = 0; k < nueces.length; k++) 
 		{
@@ -532,6 +755,42 @@ public class Juego extends InterfaceJuego
 			 }
 		}
 		
+		for (int k = 0; k < nueces.length; k++)
+		{
+			if (nueces[k] != null && nueces[k].plantada)
+			{
+				if(this.colosal != null)
+		        {
+		        	double dist = Math.sqrt( Math.pow(nueces[k].x - colosal.x, 2) + Math.pow(nueces[k].y - colosal.y, 2) );
+		        	
+		        	if(dist < 200)
+		        	{
+		        		double[] centro = c.obtenerCentroCeldaMasCercana(nueces[k].x, nueces[k].y);
+		        		
+		        		for (int e = 0; e < explosiones.length; e++) 
+	                	{
+	                	    if (explosiones[e] == null) 
+	                	    {
+	                	        explosiones[e] = new Explosion(centro[0], centro[1]-40, entorno);
+	                	        break;
+	                	    }
+	                	}
+		        		
+		        		colosal.vida -= 0.5;
+		        		
+		        		if(colosal.vida <= 0)
+		        		{
+		        			colosal = null;
+		        		}
+		        		nueces[k] = null;
+		        		break;
+		        	}
+		        }
+			}
+		}
+		
+		
+		// ---------------------- Colision con el radio de explosiones -------------------------
 		
 		for (int e = 0; e < explosiones.length; e++) {
 		    if (explosiones[e] != null) {
@@ -543,7 +802,58 @@ public class Juego extends InterfaceJuego
 		}
 		
 		
-		// ----- Seccion de planta lanza fuego -----
+		for (int e = 0; e < explosiones.length; e++)
+		{
+			if(explosiones[e] != null)
+			{
+				for(int k = 0; k < zombies.length; k++)
+			    {
+			    	if(zombies[k] != null)
+			    	{
+			    		double dist = Math.sqrt(Math.pow(explosiones[e].x - zombies[k].x, 2) + Math.pow(explosiones[e].y - zombies[k].y, 2));
+			    		
+			    		if(dist < c.ancho+20)
+			    		{
+			    			zombies[k] = null;
+			    			this.zombiesRestantes--;
+			    			this.zombiesEliminados++;
+			    		}
+			    	}
+			    }
+				for(int k = 0; k < zombiesBart.length; k++)
+			    {
+			    	if(zombiesBart[k] != null)
+			    	{
+			    		double dist = Math.sqrt(Math.pow(explosiones[e].x - zombiesBart[k].x, 2) + Math.pow(explosiones[e].y - zombiesBart[k].y, 2));
+			    		
+			    		if(dist < c.ancho+20)
+			    		{
+			    			zombiesBart[k] = null;
+			    			this.zombiesRestantes--;
+			    			this.zombiesEliminados++;
+			    		}
+			    	}
+			    }
+				for(int k = 0; k < zombiesCerebros.length; k++)
+			    {
+			    	if(zombiesCerebros[k] != null)
+			    	{
+			    		double dist = Math.sqrt(Math.pow(explosiones[e].x - zombiesCerebros[k].x, 2) + Math.pow(explosiones[e].y - zombiesCerebros[k].y, 2));
+			    		
+			    		if(dist < c.ancho+20)
+			    		{
+			    			zombiesCerebros[k] = null;
+			    			this.zombiesRestantes--;
+			    			this.zombiesEliminados++;
+			    		}
+			    	}
+			    }
+			}
+		}
+		
+		
+		
+		// --------------- Seccion de planta lanza fuego ------------------
 		
 		
 		
@@ -555,6 +865,12 @@ public class Juego extends InterfaceJuego
 				p.dibujar();
 			}
 			
+		}
+		
+		if(esperandoRecargaPlanta)
+		{
+			entorno.dibujarImagen(recarga, 170, 25, 0, 0.1);
+			entorno.dibujarImagen(cargandoFuego, 170, 68, 0, 0.8);
 		}
 		
 		//Recorremos todas las plantas. Seleccionar, arrastrar y plantar una planta tipo fuego
@@ -595,21 +911,12 @@ public class Juego extends InterfaceJuego
 			            double[] centro = c.obtenerCentroCeldaMasCercana(entorno.mouseX(), entorno.mouseY());
 
 			            // Chequeo que la celda no esté ocupada
-			            if (!c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaNuez(centro[0], centro[1], nueces) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles)) {
+			            if (!c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaNuez(centro[0], centro[1], nueces) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles) && !c.celdaOcupadaTumba(centro[0], centro[1], tumbas)) {
 			                planta.nuevaPosicion(centro[0], centro[1]);
 			                planta.plantada = true;
+			                this.ultimaPlantadaPlanta = this.tiempoJuego;
+			            	this.esperandoRecargaPlanta = true;
 			                
-			              
-			                
-			                // Creo una nueva planta disponible en el panel
-				            for (int i = 0; i < fuego.length; i++) 
-				            {
-				                if (fuego[i] == null) 
-				                {
-				                    fuego[i] = new Planta(160, 68, entorno);
-				                    break;
-				                }
-				            }
 			            } 
 			            else 
 			            {
@@ -625,8 +932,148 @@ public class Juego extends InterfaceJuego
 			}
 		}
 		
+		// Se crea despues de 5 segundos otra planta Fuego en panel
+		if(!hayPlantaFuegoPanel(fuego) && esperandoRecargaPlanta)
+		{
+			if(tiempoJuego - ultimaPlantadaPlanta >= intervaloPlantarPlanta)
+			{
+				for (int i = 0; i < fuego.length; i++) {
+		            if (fuego[i] == null) {
+		                fuego[i] = new Planta(170, 68, entorno);
+		                this.esperandoRecargaPlanta = false;
+		                break;
+		            }
+		        }
+			}
+			
+		}
 		
-		// -----Seccion desplazamiento de las plantas con las teclas-------
+		
+		
+		
+		
+		//  ---------------- Colision de plantas de fuego con zombies -------------------
+		
+		
+		
+		for (int k = 0; k < fuego.length; k++) 
+		{
+			 if (fuego[k] != null && fuego[k].plantada) 
+			 {
+				 	//Colision con zombies comunes
+			        for (int j = 0; j < zombies.length; j++) 
+			        {
+			            if (zombies[j] != null) 
+			            {
+			                double dist = Math.sqrt(Math.pow(fuego[k].x - zombies[j].x, 2) + Math.pow(fuego[k].y - zombies[j].y, 2));
+	
+			                if (dist < 30) 
+			                {
+			                	
+			                	fuego[k].vida -= 0.5;
+			                	zombies[j].x += 5;
+			                	
+			                	if(fuego[k].vida == 0)
+					               {
+			                		
+			                			fuego[k] = null;
+			                			
+					               }
+			                	break;
+			               }
+			               
+			           }
+			       }
+			 }
+		}
+		
+		
+		for (int k = 0; k < fuego.length; k++) 
+		{
+			 if (fuego[k] != null && fuego[k].plantada) 
+			 {
+				 	//Colision con zombies comunes
+			        for (int j = 0; j < zombiesBart.length; j++) 
+			        {
+			            if (zombiesBart[j] != null) 
+			            {
+			                double dist = Math.sqrt(Math.pow(fuego[k].x - zombiesBart[j].x, 2) + Math.pow(fuego[k].y - zombiesBart[j].y, 2));
+	
+			                if (dist < 30) 
+			                {
+			                	
+			                	fuego[k].vida -= 0.5;
+			                	zombiesBart[j].x += 5;
+			                	
+			                	if(fuego[k].vida == 0)
+					               {
+			                		
+			                			fuego[k] = null;
+			                			
+					               }
+			                	break;
+			               }
+			               
+			           }
+			       }
+			 }
+		}
+		
+		
+		for (int k = 0; k < fuego.length; k++) 
+		{
+			 if (fuego[k] != null && fuego[k].plantada) 
+			 {
+				 	//Colision con zombies comunes
+			        for (int j = 0; j < zombiesCerebros.length; j++) 
+			        {
+			            if (zombiesCerebros[j] != null) 
+			            {
+			                double dist = Math.sqrt(Math.pow(fuego[k].x - zombiesCerebros[j].x, 2) + Math.pow(fuego[k].y - zombiesCerebros[j].y, 2));
+	
+			                if (dist < 30) 
+			                {
+			                	
+			                	fuego[k].vida -= 0.5;
+			                	zombiesCerebros[j].x += 5;
+			                	
+			                	if(fuego[k].vida == 0)
+					               {
+			                		
+			                			fuego[k] = null;
+			                			
+					               }
+			                	break;
+			               }
+			               
+			           }
+			       }
+			 }
+		}
+			
+		
+		for (int k = 0; k < fuego.length; k++) 
+		{
+			 if (fuego[k] != null && fuego[k].plantada) 
+			 {
+				 if(colosal != null)
+				 {
+					 double dist = Math.sqrt(Math.pow(fuego[k].x - colosal.x, 2) + Math.pow(fuego[k].y - colosal.y, 2));
+					 
+					 if (dist < 300 )
+		             {
+						 
+						 fuego[k] = null;
+		            	 break;
+		             }
+				 }
+			 }
+		}
+		
+		
+		
+		
+		// --------------------------- Seccion desplazamiento de las plantas con las teclas ---------------------------------------
 		
 		
 		//Plantas de fuego
@@ -640,26 +1087,30 @@ public class Juego extends InterfaceJuego
 				double[] proximoArriba = c.obtenerCentroCeldaMasCercana(p.x, p.y - c.alto);
 				double[] proximoDerecho = c.obtenerCentroCeldaMasCercana(p.x + c.ancho, p.y);
 				double[] proximoAbajo = c.obtenerCentroCeldaMasCercana(p.x, p.y + c.alto);
-				double[] proximoIzquiero = c.obtenerCentroCeldaMasCercana(p.x - c.ancho, p.y);
+				double[] proximoIzquierdo = c.obtenerCentroCeldaMasCercana(p.x - c.ancho, p.y);
 				
-				if (!c.celdaOcupada(proximoArriba[0], proximoArriba[1], fuego) && !c.celdaOcupadaNuez(proximoArriba[0], proximoArriba[1], nueces) && !c.celdaOcupadaHuracol(proximoArriba[0], proximoArriba[1], huracoles))
+				if (!c.celdaOcupada(proximoArriba[0], proximoArriba[1], fuego) && !c.celdaOcupadaNuez(proximoArriba[0], proximoArriba[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoArriba[0], proximoArriba[1], huracoles) && !c.celdaOcupadaTumba(proximoArriba[0], proximoArriba[1], tumbas))
 				{
 					p.desplazarArriba(proximoArriba[0], proximoArriba[1]);
 				}
 				
-				if (!c.celdaOcupada(proximoDerecho[0], proximoDerecho[1], fuego) && !c.celdaOcupadaNuez(proximoDerecho[0], proximoDerecho[1], nueces) && !c.celdaOcupadaHuracol(proximoDerecho[0], proximoDerecho[1], huracoles))
+				if (!c.celdaOcupada(proximoDerecho[0], proximoDerecho[1], fuego) && !c.celdaOcupadaNuez(proximoDerecho[0], proximoDerecho[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoDerecho[0], proximoDerecho[1], huracoles) && !c.celdaOcupadaTumba(proximoDerecho[0], proximoDerecho[1], tumbas))
 				{
 					p.desplazarDerecha(proximoDerecho[0], proximoDerecho[1]);
 				}
 				
-				if (!c.celdaOcupada(proximoAbajo[0], proximoAbajo[1], fuego) && !c.celdaOcupadaNuez(proximoAbajo[0], proximoAbajo[1], nueces) && !c.celdaOcupadaHuracol(proximoAbajo[0], proximoAbajo[1], huracoles))
+				if (!c.celdaOcupada(proximoAbajo[0], proximoAbajo[1], fuego) && !c.celdaOcupadaNuez(proximoAbajo[0], proximoAbajo[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoAbajo[0], proximoAbajo[1], huracoles) && !c.celdaOcupadaTumba(proximoAbajo[0], proximoAbajo[1], tumbas))
 				{
 					p.desplazarAbajo(proximoAbajo[0], proximoAbajo[1]);
 				}
 				
-				if (!c.celdaOcupada(proximoIzquiero[0], proximoIzquiero[1], fuego) && !c.celdaOcupadaNuez(proximoIzquiero[0], proximoIzquiero[1], nueces) && !c.celdaOcupadaHuracol(proximoIzquiero[0], proximoIzquiero[1], huracoles))
+				if (!c.celdaOcupada(proximoIzquierdo[0], proximoIzquierdo[1], fuego) && !c.celdaOcupadaNuez(proximoIzquierdo[0], proximoIzquierdo[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoIzquierdo[0], proximoIzquierdo[1], huracoles) && !c.celdaOcupadaTumba(proximoIzquierdo[0], proximoIzquierdo[1], tumbas))
 				{
-					p.desplazarIzquierda(proximoIzquiero[0], proximoIzquiero[1]);
+					p.desplazarIzquierda(proximoIzquierdo[0], proximoIzquierdo[1]);
 				}
 				
 			
@@ -677,26 +1128,30 @@ public class Juego extends InterfaceJuego
 				double[] proximoArriba = c.obtenerCentroCeldaMasCercana(n.x, n.y - c.alto);
 				double[] proximoDerecho = c.obtenerCentroCeldaMasCercana(n.x + c.ancho, n.y);
 				double[] proximoAbajo = c.obtenerCentroCeldaMasCercana(n.x, n.y + c.alto);
-				double[] proximoIzquiero = c.obtenerCentroCeldaMasCercana(n.x - c.ancho, n.y);
+				double[] proximoIzquierdo = c.obtenerCentroCeldaMasCercana(n.x - c.ancho, n.y);
 				
-				if (!c.celdaOcupada(proximoArriba[0], proximoArriba[1], fuego) && !c.celdaOcupadaNuez(proximoArriba[0], proximoArriba[1], nueces) && !c.celdaOcupadaHuracol(proximoArriba[0], proximoArriba[1], huracoles))
+				if (!c.celdaOcupada(proximoArriba[0], proximoArriba[1], fuego) && !c.celdaOcupadaNuez(proximoArriba[0], proximoArriba[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoArriba[0], proximoArriba[1], huracoles) && !c.celdaOcupadaTumba(proximoArriba[0], proximoArriba[1], tumbas))
 				{
 					n.desplazarArriba(proximoArriba[0], proximoArriba[1]);
 				}
 				
-				if (!c.celdaOcupada(proximoDerecho[0], proximoDerecho[1], fuego) && !c.celdaOcupadaNuez(proximoDerecho[0], proximoDerecho[1], nueces) && !c.celdaOcupadaHuracol(proximoDerecho[0], proximoDerecho[1], huracoles))
+				if (!c.celdaOcupada(proximoDerecho[0], proximoDerecho[1], fuego) && !c.celdaOcupadaNuez(proximoDerecho[0], proximoDerecho[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoDerecho[0], proximoDerecho[1], huracoles) && !c.celdaOcupadaTumba(proximoDerecho[0], proximoDerecho[1], tumbas))
 				{
 					n.desplazarDerecha(proximoDerecho[0], proximoDerecho[1]);
 				}
 				
-				if (!c.celdaOcupada(proximoAbajo[0], proximoAbajo[1], fuego) && !c.celdaOcupadaNuez(proximoAbajo[0], proximoAbajo[1], nueces) && !c.celdaOcupadaHuracol(proximoAbajo[0], proximoAbajo[1], huracoles))
+				if (!c.celdaOcupada(proximoAbajo[0], proximoAbajo[1], fuego) && !c.celdaOcupadaNuez(proximoAbajo[0], proximoAbajo[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoAbajo[0], proximoAbajo[1], huracoles) && !c.celdaOcupadaTumba(proximoAbajo[0], proximoAbajo[1], tumbas) )
 				{
 					n.desplazarAbajo(proximoAbajo[0], proximoAbajo[1]);
 				}
 				
-				if (!c.celdaOcupada(proximoIzquiero[0], proximoIzquiero[1], fuego) && !c.celdaOcupadaNuez(proximoIzquiero[0], proximoIzquiero[1], nueces) && !c.celdaOcupadaHuracol(proximoIzquiero[0], proximoIzquiero[1], huracoles))
+				if (!c.celdaOcupada(proximoIzquierdo[0], proximoIzquierdo[1], fuego) && !c.celdaOcupadaNuez(proximoIzquierdo[0], proximoIzquierdo[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoIzquierdo[0], proximoIzquierdo[1], huracoles) && !c.celdaOcupadaTumba(proximoIzquierdo[0], proximoIzquierdo[1], tumbas))
 				{
-					n.desplazarIzquierda(proximoIzquiero[0], proximoIzquiero[1]);
+					n.desplazarIzquierda(proximoIzquierdo[0], proximoIzquierdo[1]);
 				}	
 			}
 		}
@@ -712,26 +1167,30 @@ public class Juego extends InterfaceJuego
 				double[] proximoArriba = c.obtenerCentroCeldaMasCercana(h.x, h.y - c.alto);
 				double[] proximoDerecho = c.obtenerCentroCeldaMasCercana(h.x + c.ancho, h.y);
 				double[] proximoAbajo = c.obtenerCentroCeldaMasCercana(h.x, h.y + c.alto);
-				double[] proximoIzquiero = c.obtenerCentroCeldaMasCercana(h.x - c.ancho, h.y);
+				double[] proximoIzquierdo = c.obtenerCentroCeldaMasCercana(h.x - c.ancho, h.y);
 				
-				if (!c.celdaOcupada(proximoArriba[0], proximoArriba[1], fuego) && !c.celdaOcupadaNuez(proximoArriba[0], proximoArriba[1], nueces) && !c.celdaOcupadaHuracol(proximoArriba[0], proximoArriba[1], huracoles))
+				if (!c.celdaOcupada(proximoArriba[0], proximoArriba[1], fuego) && !c.celdaOcupadaNuez(proximoArriba[0], proximoArriba[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoArriba[0], proximoArriba[1], huracoles) && !c.celdaOcupadaTumba(proximoArriba[0], proximoArriba[1], tumbas))
 				{
 					h.desplazarArriba(proximoArriba[0], proximoArriba[1]);
 				}
 				
-				if (!c.celdaOcupada(proximoDerecho[0], proximoDerecho[1], fuego) && !c.celdaOcupadaNuez(proximoDerecho[0], proximoDerecho[1], nueces) && !c.celdaOcupadaHuracol(proximoDerecho[0], proximoDerecho[1], huracoles))
+				if (!c.celdaOcupada(proximoDerecho[0], proximoDerecho[1], fuego) && !c.celdaOcupadaNuez(proximoDerecho[0], proximoDerecho[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoDerecho[0], proximoDerecho[1], huracoles) && !c.celdaOcupadaTumba(proximoDerecho[0], proximoDerecho[1], tumbas))
 				{
 					h.desplazarDerecha(proximoDerecho[0], proximoDerecho[1]);
 				}
 				
-				if (!c.celdaOcupada(proximoAbajo[0], proximoAbajo[1], fuego) && !c.celdaOcupadaNuez(proximoAbajo[0], proximoAbajo[1], nueces) && !c.celdaOcupadaHuracol(proximoAbajo[0], proximoAbajo[1], huracoles))
+				if (!c.celdaOcupada(proximoAbajo[0], proximoAbajo[1], fuego) && !c.celdaOcupadaNuez(proximoAbajo[0], proximoAbajo[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoAbajo[0], proximoAbajo[1], huracoles) && !c.celdaOcupadaTumba(proximoAbajo[0], proximoAbajo[1], tumbas))
 				{
 					h.desplazarAbajo(proximoAbajo[0], proximoAbajo[1]);
 				}
 				
-				if (!c.celdaOcupada(proximoIzquiero[0], proximoIzquiero[1], fuego) && !c.celdaOcupadaNuez(proximoIzquiero[0], proximoIzquiero[1], nueces) && !c.celdaOcupadaHuracol(proximoIzquiero[0], proximoIzquiero[1], huracoles))
+				if (!c.celdaOcupada(proximoIzquierdo[0], proximoIzquierdo[1], fuego) && !c.celdaOcupadaNuez(proximoIzquierdo[0], proximoIzquierdo[1], nueces) && 
+						!c.celdaOcupadaHuracol(proximoIzquierdo[0], proximoIzquierdo[1], huracoles) && !c.celdaOcupadaTumba(proximoIzquierdo[0], proximoIzquierdo[1], tumbas))
 				{
-					h.desplazarIzquierda(proximoIzquiero[0], proximoIzquiero[1]);
+					h.desplazarIzquierda(proximoIzquierdo[0], proximoIzquierdo[1]);
 				}	
 			}
 		}
@@ -744,19 +1203,25 @@ public class Juego extends InterfaceJuego
 		
 		//Zombies comunes
 		if(tiempoActualZombie - this.tiempoUltimoCreado >= this.intervaloCreacion)
-			
-		for(int j = 0; j < zombies.length; j++)
 		{
-			if(zombies[j] == null)
+			for(int j = 0; j < zombies.length; j++)
 			{
-				int fila = (int) (Math.random() * 5); 
-	            double yZombie = c.y + fila * c.getAltoCelda() - 10;
-				
-				zombies[j] = new Zombie(1200, yZombie, entorno);
-				this.tiempoUltimoCreado = tiempoActualZombie;
-				break;
+				if(zombies[j] == null)
+				{
+					int fila = (int) (Math.random() * 5); 
+		            double yZombie = c.y + fila * c.getAltoCelda() - 10;
+		            
+		            if(this.zombiesCreados < 50)
+		    		{
+		            	zombies[j] = new Zombie(1200, yZombie, entorno);
+						this.zombiesCreados++;
+						break;
+		    		}
+				}
 			}
+			this.tiempoUltimoCreado = tiempoActualZombie;
 		}
+			
 		
 		// Mover y dibujar todos los zombies existentes
 		for (int j = 0; j < zombies.length; j++) {
@@ -775,7 +1240,7 @@ public class Juego extends InterfaceJuego
 		
 		//Zombies Cerebros
 		if(tiempoActualZombie - this.tiempoUltimoCreadoCerebro >= this.intervaloCreacionCerebro)
-			
+		{
 			for(int j = 0; j < zombiesCerebros.length; j++)
 			{
 				if(zombiesCerebros[j] == null)
@@ -783,64 +1248,120 @@ public class Juego extends InterfaceJuego
 					int fila = (int) (Math.random() * 5); 
 		            double yZombie = c.y + fila * c.getAltoCelda()-10;
 					
-					zombiesCerebros[j] = new ZombieCerebro(1200, yZombie, entorno);
-					this.tiempoUltimoCreadoCerebro = tiempoActualZombie;
-					break;
+		            if(this.zombiesCreados < 50)
+		    		{
+		            	zombiesCerebros[j] = new ZombieCerebro(1200, yZombie, entorno);
+						this.zombiesCreados++;
+						break;
+		    		}
 				}
 			}
+			this.tiempoUltimoCreadoCerebro = tiempoActualZombie;
+		}
 			
-			// Mover y dibujar todos los zombies existentes
-			for (int j = 0; j < zombiesCerebros.length; j++) {
-			    ZombieCerebro z = zombiesCerebros[j];
-			    if (z != null) {
-			        z.mover();
-			        z.dibujar();
+			
+			
+		// Mover y dibujar todos los zombies existentes
+		for (int j = 0; j < zombiesCerebros.length; j++) {
+		    ZombieCerebro z = zombiesCerebros[j];
+		    if (z != null) {
+		        z.mover();
+		        z.dibujar();
 
-			        // Si sale del entorno por la izquierda, lo eliminamos
-			        if (z.x < 0) {
-			            zombiesCerebros[j] = null;
-			        }
-			    }
-			}
+		        // Si sale del entorno por la izquierda, lo eliminamos
+		        if (z.x < 0) {
+		            zombiesCerebros[j] = null;
+		        }
+		    }
+		}
 			
 			
-			//Zombies Bart
-			if(tiempoActualZombie - this.tiempoUltimoCreadoBart >= this.intervaloCreacionBart)
-				
-				for(int j = 0; j < zombiesBart.length; j++)
+		//Zombies Bart
+		if(tiempoActualZombie - this.tiempoUltimoCreadoBart >= this.intervaloCreacionBart)
+		{
+			for(int j = 0; j < zombiesBart.length; j++)
+			{
+				if(zombiesBart[j] == null)
 				{
-					if(zombiesBart[j] == null)
+					int fila = (int) (Math.random() * 5); 
+		            double yZombie = c.y + fila * c.getAltoCelda() - 15;
+					
+		            if(this.zombiesCreados < 50)
+		    		{
+		            	zombiesBart[j] = new ZombieBart(1200, yZombie, entorno);
+						this.zombiesCreados++;
+						break;
+		    		}
+				}
+			}
+			this.tiempoUltimoCreadoBart = tiempoActualZombie;
+		}
+		
+		// Mover y dibujar todos los zombies bart existentes
+		for (int j = 0; j < zombiesBart.length; j++) {
+		    ZombieBart z = zombiesBart[j];
+		    if (z != null) {
+		        z.mover();
+		        z.dibujar();
+
+		        // Si sale del entorno por la izquierda, lo eliminamos
+		        if (z.x < 0) {
+		            zombiesBart[j] = null;
+		        }
+		    }
+		}
+		
+		
+		// ------------------------ Creacion del zombie colosal ---------------------------------------
+				
+		if(this.colosal != null && this.zombiesEliminados >= 50)
+		{
+			colosal.dibujar();
+			colosal.mover();
+		}
+		
+		
+		if(this.colosal != null)
+		{
+			if (tiempoActual - this.colosal.ultimoTiempoDisparo >= this.colosal.intervaloDisparo && colosal.x < c.x + c.ancho*9)
+			{
+				for(int k = 0; k < energia.length; k++)
+				{
+					if(energia[k] == null)
 					{
-						int fila = (int) (Math.random() * 5); 
-			            double yZombie = c.y + fila * c.getAltoCelda() - 15;
-						
-						zombiesBart[j] = new ZombieBart(1200, yZombie, entorno);
-						this.tiempoUltimoCreadoBart = tiempoActualZombie;
+						energia[k] = new ProyectilZombie(colosal.x-20, colosal.y+30, 0.4, entorno);
+						energia[k+1] = new ProyectilZombie(colosal.x-20, colosal.y+30 - c.alto, 0.4, entorno);
+						energia[k+2] = new ProyectilZombie(colosal.x-20, colosal.y+30 + c.alto, 0.4, entorno);
+						energia[k+3] = new ProyectilZombie(colosal.x-20, colosal.y+30 - 2*c.alto, 0.4, entorno);
+						energia[k+4] = new ProyectilZombie(colosal.x-20, colosal.y+30 + 2*c.alto, 0.4, entorno);
 						break;
 					}
 				}
+				this.colosal.ultimoTiempoDisparo = tiempoActual;
+			}
+		}
+		
+		for(int k = 0; k < energia.length; k++)
+		{
+			if(energia[k] != null)
+			{
+				energia[k].mover();
+				energia[k].dibujar();
 				
-				// Mover y dibujar todos los zombies existentes
-				for (int j = 0; j < zombiesBart.length; j++) {
-				    ZombieBart z = zombiesBart[j];
-				    if (z != null) {
-				        z.mover();
-				        z.dibujar();
-
-				        // Si sale del entorno por la izquierda, lo eliminamos
-				        if (z.x < 0) {
-				            zombiesBart[j] = null;
-				        }
-				    }
+				if(energia[k].x < 20)
+				{
+					energia[k] = null;
 				}
-
+			}
+		}
 		
 			    
 		
-		// ----- Seccion disparos de plantas ------
+		// --------------------------- Seccion disparos de plantas ------------------------------
 		
 		
-		//Bolas de fuego
+		// ----------------------------- Bolas de fuego ----------------------------------------
+		
 		//Genera una bola de fuego en un determinado tiempo
 		for (Planta p : fuego) {
 	        if (p != null && p.plantada) {
@@ -860,6 +1381,7 @@ public class Juego extends InterfaceJuego
 		for(int k = 0; k < bolas.length; k++)
 		{
 			BolaFuego b = bolas[k];
+			
 			if(b != null)
 			{
 				b.mover();
@@ -868,74 +1390,165 @@ public class Juego extends InterfaceJuego
 		        if (b.x > ancho) {
 		            bolas[k] = null;
 		        }
-	        for(int j = 0; j < zombies.length; j++)
-	        {
-	        	if(zombies[j] != null)
-	        	{
-	        		double dist = Math.sqrt( Math.pow(b.x - zombies[j].x, 2) + Math.pow(b.y - zombies[j].y, 2) );
-	        		if(dist < 20)
-	        		{
-	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
-	        			zombies[j].vida -=2;
-	        			if(zombies[j].vida == 0)
-	        			{
-	        				zombies[j] = null;
-	        				this.zombiesEliminados+=1;
-	        				this.zombiesRestantes--;
-	        			}
-	        			bolas[k] = null;
-	        			      		
-	        		}
-	        	}
-		     }
-	        for(int j = 0; j < zombiesBart.length; j++)
-	        {
-	        	if(zombiesBart[j] != null)
-	        	{
-	        		double dist = Math.sqrt( Math.pow(b.x - zombiesBart[j].x, 2) + Math.pow(b.y - zombiesBart[j].y, 2) );
-	        		if(dist < 20)
-	        		{
-	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
-	        			zombiesBart[j].vida -=2;
-	        			if(zombiesBart[j].vida == 0)
-	        			{
-	        				zombiesBart[j] = null;
-	        				this.zombiesEliminados+=1;
-	        				this.zombiesRestantes--;
-	        			}
-	        			bolas[k] = null;
-	        			      		
-	        		}
-	        	}
-		     }
-	        for(int j = 0; j < zombiesCerebros.length; j++)
-	        {
-	        	if(zombiesCerebros[j] != null)
-	        	{
-	        		double dist = Math.sqrt( Math.pow(b.x - zombiesCerebros[j].x, 2) + Math.pow(b.y - zombiesCerebros[j].y, 2) );
-	        		if(dist < 20)
-	        		{
-	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
-	        			zombiesCerebros[j].vida -=2;
-	        			if(zombiesCerebros[j].vida == 0)
-	        			{
-	        				zombiesCerebros[j] = null;	
-	        				this.zombiesEliminados+=1;
-	        				this.zombiesRestantes--;
-	        			}
-	        			bolas[k] = null;
-	        			      		
-	        		}
-	        	}
-		     }
-	        
+		        
+		        for(int j = 0; j < zombies.length; j++)
+		        {
+		        	if(zombies[j] != null)
+		        	{
+		        		double dist = Math.sqrt( Math.pow(b.x - zombies[j].x, 2) + Math.pow(b.y - zombies[j].y, 2) );
+		        		double [] centro = c.obtenerCentroCeldaMasCercana(zombies[j].x, zombies[j].y);
+		        		double numRandom = (int) (Math.random() * 10);
+		        		
+		        		if(dist < 20)
+		        		{
+		        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+		        			zombies[j].vida -= 2;
+		        			
+		        			if(zombies[j].vida == 0)
+		        			{
+		        				zombies[j] = null;
+		        				this.zombiesEliminados+=1;
+		        				this.zombiesRestantes--;
+		        				
+		        				if(numRandom <= 4)
+		        				{
+		        					for(int t = 0; t < tumbas.length; t++)
+		        					{
+		        						if(tumbas[t] == null && !c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles) && 
+		        								!c.celdaOcupadaNuez(centro[0], centro[1], nueces))
+		        							
+		        						{
+		        							tumbas[t] = new Tumba(centro[0], centro[1], entorno);
+		        							tumbas[t].enterrada = true;
+		        							break;
+		        						}
+		        					}
+		        				}
+		        			}
+		        			bolas[k] = null;
+		        			      		
+		        		}
+		        	}
+			     }
+		        for(int j = 0; j < zombiesBart.length; j++)
+		        {
+		        	if(zombiesBart[j] != null)
+		        	{
+		        		double dist = Math.sqrt( Math.pow(b.x - zombiesBart[j].x, 2) + Math.pow(b.y - zombiesBart[j].y, 2) );
+		        		double [] centro = c.obtenerCentroCeldaMasCercana(zombiesBart[j].x, zombiesBart[j].y);
+		        		double numRandom = (int) (Math.random() * 10);
+		        		
+		        		if(dist < 20)
+		        		{
+		        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+		        			zombiesBart[j].vida -=2;
+		        			if(zombiesBart[j].vida == 0)
+		        			{
+		        				zombiesBart[j] = null;
+		        				this.zombiesEliminados+=1;
+		        				this.zombiesRestantes--;
+		        				
+		        				if(numRandom <= 4)
+		        				{
+		        					for(int t = 0; t < tumbas.length; t++)
+		        					{
+		        						if(tumbas[t] == null && !c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles) && 
+		        								!c.celdaOcupadaNuez(centro[0], centro[1], nueces))
+		        							
+		        						{
+		        							tumbas[t] = new Tumba(centro[0], centro[1], entorno);
+		        							tumbas[t].enterrada = true;
+		        							break;
+		        						}
+		        					}
+		        				}
+		        			}
+		        			bolas[k] = null;
+		        			      		
+		        		}
+		        	}
+			     }
+		        for(int j = 0; j < zombiesCerebros.length; j++)
+		        {
+		        	if(zombiesCerebros[j] != null)
+		        	{
+		        		double dist = Math.sqrt( Math.pow(b.x - zombiesCerebros[j].x, 2) + Math.pow(b.y - zombiesCerebros[j].y, 2) );
+		        		double [] centro = c.obtenerCentroCeldaMasCercana(zombiesCerebros[j].x, zombiesCerebros[j].y);
+		        		double numRandom = (int) (Math.random() * 10);
+		        		
+		        		if(dist < 20)
+		        		{
+		        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+		        			zombiesCerebros[j].vida -=2;
+		        			if(zombiesCerebros[j].vida == 0)
+		        			{
+		        				zombiesCerebros[j] = null;	
+		        				this.zombiesEliminados+=1;
+		        				this.zombiesRestantes--;
+		        				
+		        				if(numRandom <= 4)
+		        				{
+		        					for(int t = 0; t < tumbas.length; t++)
+		        					{
+		        						if(tumbas[t] == null && !c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles) && 
+		        								!c.celdaOcupadaNuez(centro[0], centro[1], nueces))
+		        						{
+		        							tumbas[t] = new Tumba(centro[0], centro[1], entorno);
+		        							tumbas[t].enterrada = true;
+		        							break;
+		        						}
+		        					}
+		        				}
+		        			}
+		        			bolas[k] = null;
+		        			      		
+		        		}
+		        	}
+			     }
+		        for(int j = 0; j < tumbas.length; j++)
+		        {
+		        	if(tumbas[j] != null && tumbas[j].enterrada)
+		        	{
+		        		double dist = Math.sqrt( Math.pow(b.x - tumbas[j].x, 2) + Math.pow(b.y - tumbas[j].y, 2) );
+		        		
+		        		if(dist < 40)
+		        		{
+		        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+		        			tumbas[j].vida -= 2;
+		        			
+		        			if(tumbas[j].vida == 0)
+		        			{
+		        				tumbas[j].enterrada = false;
+		        				tumbas[j] = null;
+		        			}
+		        			bolas[k] = null; 
+		        		}
+		        	}
+		        }
+		        if(this.colosal != null)
+		        {
+		        	double dist = Math.sqrt( Math.pow(b.x - colosal.x, 2) + Math.pow(b.y - colosal.y, 2) );
+		        	
+		        	if(dist < 230)
+		        	{
+		        		entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+		        		colosal.vida -= 0.5;
+		        		if(colosal.vida <= 0)
+		        		{
+		        			colosal = null;
+		        		}
+		        		bolas[k] = null;
+		        	}
+		        }
 		     }
 			
 		}
 		
 		
-		//Bola azul
+		// ------------------------------ Bola azul ------------------------------------------
+		
 		//Genera una bola azul en un determinado tiempo
+		
 		for (Huracol h : huracoles) {
 	        if (h != null && h.plantada) {
 	            if (tiempoActual - h.tiempoUltimoDisparo >= h.intervaloDisparo) {
@@ -949,10 +1562,14 @@ public class Juego extends InterfaceJuego
 	            }
 	        }
 	    }
+		
 			
-		//Movimiento de disparo
+		// ------------------ Movimiento de disparos y colisiones con zombies, tumbas y colosal ----------------------------
+		
 		for(int k = 0; k < bolasAzul.length; k++)
 		{
+			
+			
 			BolaAzul b = bolasAzul[k];
 			if(b != null)
 			{
@@ -963,70 +1580,180 @@ public class Juego extends InterfaceJuego
 		            bolasAzul[k] = null;
 		        }
 		        
-	        for(int j = 0; j < zombies.length; j++)
-	        {
-	        	if(zombies[j] != null)
-	        	{
-	        		double dist = Math.sqrt( Math.pow(b.x - zombies[j].x, 2) + Math.pow(b.y - zombies[j].y, 2) );
-	        		if(dist < 20)
-	        		{
-	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
-	        			zombies[j].vida -=2;
-	        			if(zombies[j].vida == 0)
-	        			{
-	        				zombies[j] = null;	
-	        				this.zombiesEliminados+=1;
-	        				this.zombiesRestantes--;
-	        			}
-	        			bolasAzul[k] = null;      		
-	        		}
-	        	}
-		     }
-	        for(int j = 0; j < zombiesBart.length; j++)
-	        {
-	        	if(zombiesBart[j] != null)
-	        	{
-	        		double dist = Math.sqrt( Math.pow(b.x - zombiesBart[j].x, 2) + Math.pow(b.y - zombiesBart[j].y, 2) );
-	        		if(dist < 20)
-	        		{
-	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
-	        			zombiesBart[j].vida -=2;
-	        			if(zombiesBart[j].vida == 0)
-	        			{
-	        				zombiesBart[j] = null;
-	        				this.zombiesEliminados+=1;
-	        				this.zombiesRestantes--;
-	        			}
-	        			bolasAzul[k] = null;      		
-	        		}
-	        	}
-		     } 
-	        for(int j = 0; j < zombiesCerebros.length; j++)
-	        {
-	        	if(zombiesCerebros[j] != null)
-	        	{
-	        		double dist = Math.sqrt( Math.pow(b.x - zombiesCerebros[j].x, 2) + Math.pow(b.y - zombiesCerebros[j].y, 2) );
-	        		if(dist < 20)
-	        		{
-	        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
-	        			zombiesCerebros[j].vida -=2;
-	        			if(zombiesCerebros[j].vida == 0)
-	        			{
-	        				zombiesCerebros[j] = null;
-	        				this.zombiesEliminados+=1;
-	        				this.zombiesRestantes--;
-	        			}
-	        			bolasAzul[k] = null;
-	        			      		
-	        		}
-	        	}
-		     }
-	        
+		        for(int j = 0; j < zombies.length; j++)
+		        {
+		        	if(zombies[j] != null)
+		        	{
+		        		double dist = Math.sqrt( Math.pow(b.x - zombies[j].x, 2) + Math.pow(b.y - zombies[j].y, 2) );
+		        		double [] centro = c.obtenerCentroCeldaMasCercana(zombies[j].x, zombies[j].y);
+		        		double numRandom = (int) (Math.random() * 10);
+		        		
+		        		if(dist < 20)
+		        		{
+		        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+		        			zombies[j].vida -= 1;
+		        			zombies[j].velocidad -= 0.05;
+		        			
+		        			if(zombies[j].vida <= 0)
+		        			{
+		        				zombies[j] = null;
+		        				this.zombiesEliminados+=1;
+		        				this.zombiesRestantes--;
+		        				
+		        				if(numRandom <= 4)
+		        				{
+		        					for(int t = 0; t < tumbas.length; t++)
+		        					{
+		        						if(tumbas[t] == null && !c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles) && 
+		        								!c.celdaOcupadaNuez(centro[0], centro[1], nueces))
+		        						{
+		        							tumbas[t] = new Tumba(centro[0], centro[1], entorno);
+		        							tumbas[t].enterrada = true;
+		        							break;
+		        						}
+		        					}
+		        				}
+		        			}
+		        			bolasAzul[k] = null;      		
+		        		}
+		        		
+		        	}
+			     }
+		        
+		        for(int j = 0; j < zombiesBart.length; j++)
+		        {
+		        	if(zombiesBart[j] != null)
+		        	{
+		        		double dist = Math.sqrt( Math.pow(b.x - zombiesBart[j].x, 2) + Math.pow(b.y - zombiesBart[j].y, 2) );
+		        		double [] centro = c.obtenerCentroCeldaMasCercana(zombiesBart[j].x, zombiesBart[j].y);
+		        		double numRandom = (int) (Math.random() * 10);
+		        		
+		        		if(dist < 20)
+		        		{
+		        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+		        			
+		        			zombiesBart[j].vida -= 1;
+		        			zombiesBart[j].velocidad -= 0.05;
+		        			
+		        			if(zombiesBart[j].vida <= 0)
+		        			{
+		        				zombiesBart[j] = null;
+		        				this.zombiesEliminados+=1;
+		        				this.zombiesRestantes--;
+		        				
+		        				if(numRandom <= 4)
+		        				{
+		        					for(int t = 0; t < tumbas.length; t++)
+		        					{
+		        						if(tumbas[t] == null && !c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles) && 
+		        								!c.celdaOcupadaNuez(centro[0], centro[1], nueces))
+		        						{
+		        							tumbas[t] = new Tumba(centro[0], centro[1], entorno);
+		        							tumbas[t].enterrada = true;
+		        							break;
+		        						}
+		        					}
+		        				}
+		        			}
+		        			bolasAzul[k] = null;      		
+		        		}
+		        	}
+			     }
+		        
+		        for(int j = 0; j < zombiesCerebros.length; j++)
+		        {
+		        	if(zombiesCerebros[j] != null)
+		        	{
+		        		double dist = Math.sqrt( Math.pow(b.x - zombiesCerebros[j].x, 2) + Math.pow(b.y - zombiesCerebros[j].y, 2) );
+		        		double [] centro = c.obtenerCentroCeldaMasCercana(zombiesCerebros[j].x, zombiesCerebros[j].y);
+		        		double numRandom = (int) (Math.random() * 10);
+		        		
+		        		if(dist < 20)
+		        		{
+		        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+		        			zombiesCerebros[j].vida -= 1;
+		        			zombiesCerebros[j].velocidad -= 0.05;
+		        			
+		        			if(zombiesCerebros[j].vida <= 0)
+		        			{
+		        				zombiesCerebros[j] = null;
+		        				this.zombiesEliminados+=1;
+		        				this.zombiesRestantes--;
+		        				
+		        				if(numRandom <= 4)
+		        				{
+		        					for(int t = 0; t < tumbas.length; t++)
+		        					{
+		        						if(tumbas[t] == null && !c.celdaOcupada(centro[0], centro[1], fuego) && !c.celdaOcupadaHuracol(centro[0], centro[1], huracoles) && 
+		        								!c.celdaOcupadaNuez(centro[0], centro[1], nueces))
+		        						{
+		        							tumbas[t] = new Tumba(centro[0], centro[1], entorno);
+		        							tumbas[t].enterrada = true;
+		        							break;
+		        						}
+		        					}
+		        				}
+		        			}
+		        			bolasAzul[k] = null;      		
+		        		}
+		        	}
+			     }
+		        
+		        for(int j = 0; j < tumbas.length; j++)
+		        {
+		        	if(tumbas[j] != null && tumbas[j].enterrada)
+		        	{
+		        		double dist = Math.sqrt( Math.pow(b.x - tumbas[j].x, 2) + Math.pow(b.y - tumbas[j].y, 2) );
+		        		
+		        		if(dist < 40)
+		        		{
+		        			entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+		        			tumbas[j].vida -= 2;
+		        			
+		        			if(tumbas[j].vida == 0)
+		        			{
+		        				tumbas[j].enterrada = false;
+		        				tumbas[j] = null;
+		        			}
+		        			bolasAzul[k] = null; 
+		        		}
+		        	}
+		        }
+		        if(this.colosal != null)
+		        {
+		        	double dist = Math.sqrt( Math.pow(b.x - colosal.x, 2) + Math.pow(b.y - colosal.y, 2) );
+		        	
+		        	if(dist < 230)
+		        	{
+		        		entorno.dibujarImagen(b.imgDaño, b.x, b.y, 0, 0.2);
+		        		colosal.vida -= 0.5;
+		        		if(colosal.vida <= 0)
+		        		{
+		        			colosal = null;
+		        		}
+		        		bolasAzul[k] = null;
+		        	}
+		        }
+			}
 		}
-		}
+		
+		
 	
-		//Condicion para ganar el juego
-		if (jugando && (zombiesEliminados == 50)) {
+		// ------------------- Dibujar tumbas -----------------------
+		
+		for (int k = 0; k < tumbas.length; k++)
+		{
+			if(tumbas[k] != null && tumbas[k].enterrada)
+			{
+				tumbas[k].dibujar();
+			}
+		}
+		
+		
+		// ----------------- Condicion para ganar el juego --------------------
+		
+		if (jugando && (this.colosal == null)) 
+		{
 		    ganaste = true;
 		    jugando = false;
 		}
@@ -1047,7 +1774,7 @@ public class Juego extends InterfaceJuego
 	    Arrays.fill(explosiones, null);
 
 	    // Reaparezco las plantas base del panel
-	    fuego[0] = new Planta(160, 68, entorno);
+	    fuego[0] = new Planta(170, 68, entorno);
 	    nueces[0] = new Nuez(269.6, 88, entorno);
 	    huracoles[0] = new Huracol(378, 84, entorno);
 
@@ -1057,8 +1784,14 @@ public class Juego extends InterfaceJuego
 	    this.tiempoUltimoCreadoBart = 0;
 	    this.tiempoUltimoCreadoCerebro = 0;
 	    this.zombiesRestantes = 50;
-	    tiempoJuego = 0;
-	    tiempoUltimoTick = entorno.tiempo() / 1000.0;
+	    this.ultimaPlantadaHuracol = 0;
+	    this.ultimaPlantadaPlanta = 0;
+	    this.ultimaPlantadaNuez = 0;
+	    this.tiempoJuego = 0;
+	    this.esperandoRecargaHuracol = false;
+	    this.esperandoRecargaNuez = false;
+	    this.esperandoRecargaPlanta = false;
+	    this.tiempoUltimoTick = entorno.tiempo() / 1000.0;
 
 	 // Restauro banderas
 	    jugando = true;
@@ -1068,6 +1801,44 @@ public class Juego extends InterfaceJuego
 	}
 	
 
+	// Metodo que devuelve true si hay planta en panel
+	public boolean hayPlantaHuracolPanel(Huracol[] h)
+	{
+		for(int k = 0; k < h.length; k++)
+		{
+			if(h[k] != null && !h[k].plantada && h[k].y < (c.y - c.alto/2) )
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	// Metodo que devuelve true si hay planta en panel
+	public boolean hayPlantaNuezPanel(Nuez[] n)
+	{
+		for(int k = 0; k < n.length; k++)
+		{
+			if(n[k] != null && n[k].y < (c.y - c.alto/2) )
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	// Metodo que devuelve true si hay planta en panel
+	public boolean hayPlantaFuegoPanel(Planta [] f)
+	{
+		for(int k = 0; k < f.length; k++)
+		{
+			if(f[k] != null && !f[k].plantada && f[k].y < (c.y - c.alto/2) )
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	@SuppressWarnings("unused")
 	public static void main(String[] args)
 	{

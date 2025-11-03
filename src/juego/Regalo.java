@@ -16,7 +16,7 @@ public class Regalo {
 		this.x = x;
 		this.y = y;
 		this.e = e;
-		this.escala = 0.22;
+		this.escala = 0.2;
 		this.img = Herramientas.cargarImagen("Imagenes/regalo2.gif");
 	}
 		

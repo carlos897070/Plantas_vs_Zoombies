@@ -8,7 +8,7 @@ import entorno.Herramientas;
 
 public class Huracol {
 
-	double x, y, escala, tiempoUltimoDisparo, intervaloDisparo, dxA;
+	double x, y, escala, tiempoUltimoDisparo, intervaloDisparo, dxA, vida;
 	Image img;
 	Entorno e;
 	boolean seleccion, plantada, seleccionadaParaMover;
@@ -27,6 +27,7 @@ public class Huracol {
 		this.intervaloDisparo = 1.5;
 		this.colorSeleccion = new Color(0, 250, 0, 100);
 		this.dxA = 0;
+		this.vida = 20;
 	}
 	
 	public double rotacionSeleccion()
