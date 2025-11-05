@@ -7,28 +7,29 @@ import entorno.Herramientas;
 
 public class ProyectilZombie {
 	
-	double x, y, escala, velocidad;
-	Image img;
+	double x, y, escala, dx;
+	Image img, imgDaño;
 	Entorno e;
 	
-	public ProyectilZombie(double x, double y, double escala, Entorno e) {
-		
+	public ProyectilZombie(double x, double y, Entorno e) {
+
 		this.x = x;
 		this.y = y;
-		this.escala = escala;
 		this.e = e;
-		this.velocidad = 3;
-		this.img = Herramientas.cargarImagen("Imagenes/discoAzul.gif");
+		this.img = Herramientas.cargarImagen("Imagenes/portal.gif");
+		this.escala = 0.2;
+		this.dx = 2;
+		this.imgDaño = Herramientas.cargarImagen("Imagenes/impacto.gif");
 	}
 	
 	public void dibujar()
 	{
-		e.dibujarImagen(this.img, this.x, this.y, 0, escala);
+		e.dibujarImagen(img, this.x, this.y+10, 0, escala);
 	}
 	
 	public void mover()
 	{
-		this.x -= velocidad;
+		this.x -= dx;
 	}
 
 }

@@ -11,7 +11,7 @@ public class Huracol {
 	double x, y, escala, tiempoUltimoDisparo, intervaloDisparo, dxA, vida;
 	Image img;
 	Entorno e;
-	boolean seleccion, plantada, seleccionadaParaMover;
+	boolean seleccion, plantada, seleccionadaParaMover, disparando;
 	Color colorSeleccion;
 	
 	public Huracol(double x, double y, Entorno e) {
@@ -28,6 +28,7 @@ public class Huracol {
 		this.colorSeleccion = new Color(0, 250, 0, 100);
 		this.dxA = 0;
 		this.vida = 20;
+		this.disparando = false;
 	}
 	
 	public double rotacionSeleccion()
@@ -57,11 +58,10 @@ public class Huracol {
 		
 	//Metodo para saber si el mause esta encima de una planta
 	boolean encima(double mx, double my) {
-	    double anchoMitad = (img.getWidth(null) * escala) / 2;
-	    double altoMitad = (img.getHeight(null) * escala) / 2;
+		
+		double dist = Math.sqrt(Math.pow(mx - this.x, 2) + Math.pow(my - this.y, 2));  
 
-	    return (mx > x - anchoMitad && mx < x + anchoMitad &&
-	            my > y - altoMitad && my < y + altoMitad);
+	    return dist < 30;
 	}
 	
 	public void nuevaPosicion(double nuevaX, double nuevaY) {
@@ -86,7 +86,7 @@ public class Huracol {
 			if(e.sePresiono('w') )
 			{
 				this.nuevaPosicion(nx, ny);
-			}	
+			}
 		}
 	}
 	

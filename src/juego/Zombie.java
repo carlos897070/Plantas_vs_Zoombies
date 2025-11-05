@@ -7,7 +7,7 @@ import entorno.Herramientas;
 
 public class Zombie {
 
-	double x, y, escala, velocidad, vida;
+	double x, y, escala, velocidad, vida, tiempoUltimoDisparo, intervaloDisparo;
 	Image img, explocion;
 	Entorno e;
 	
@@ -21,6 +21,8 @@ public class Zombie {
 		this.velocidad = 0.3;
 		this.vida = 16;
 		this.explocion = Herramientas.cargarImagen("Imagenes/humo2.gif");
+		this.tiempoUltimoDisparo = 0;
+		this.intervaloDisparo = 8;
 	}
 	public void dibujar()
 	{

@@ -80,13 +80,13 @@ public class Cuadricula {
 	    }
 	}
 	
-	public boolean celdaOcupada(double cx, double cy, Planta[] plantas) {
+	public boolean celdaOcupada(double cx, double cy, LanzaLlamas[] plantas) {
 		//Aca digo que siempre la columna de los regalos va a estar ocupada
 		if(cx < 160 + this.ancho/2)
 		{
 			return true;
 		}
-	    for (Planta p : plantas) {
+	    for (LanzaLlamas p : plantas) {
 	        if (p != null && p.plantada) {
 	            // Si la distancia entre el centro de la celda y la planta es muy chica,
 	            // consideramos que está ocupada

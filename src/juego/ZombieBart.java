@@ -7,8 +7,8 @@ import entorno.Herramientas;
 
 public class ZombieBart {
 
-	double x, y, escala, velocidad, vida;
-	Image img, explocion;
+	double x, y, escala, velocidad, vida, tiempoUltimoDisparo, intervaloDisparo;
+	Image img;
 	Entorno e;
 	
 public ZombieBart(double x, double y, Entorno e) {
@@ -20,7 +20,9 @@ public ZombieBart(double x, double y, Entorno e) {
 		this.escala = 0.25;
 		this.velocidad = 0.4;
 		this.vida = 16;
-		this.explocion = Herramientas.cargarImagen("Imagenes/humo2.gif");
+		this.tiempoUltimoDisparo = 0;
+		this.intervaloDisparo = 10;
+		
 	}
 	public void dibujar()
 	{
@@ -32,8 +34,4 @@ public ZombieBart(double x, double y, Entorno e) {
 		this.x -= velocidad;
 	}
 	
-	public void muerto()
-	{
-		e.dibujarImagen(explocion, this.x, this.y, 0, 1);
-	}
 }

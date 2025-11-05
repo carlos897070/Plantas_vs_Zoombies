@@ -18,12 +18,12 @@ public class ZombieColosal {
 		this.y = y;
 		this.e = e;
 		this.escala = 2.13;
-		this.vida = 100;
-		this.velocidad = 0.1;
+		this.vida = 130;
+		this.velocidad = 0.2;
 		this.img = Herramientas.cargarImagen("Imagenes/zombieJefe.gif");
 		this.disco = Herramientas.cargarImagen("Imagenes/discoAzul.gif");
 		this.ultimoTiempoDisparo = 0;
-		this.intervaloDisparo = 11;
+		this.intervaloDisparo = 13;
 	}
 	
 	public void dibujar()

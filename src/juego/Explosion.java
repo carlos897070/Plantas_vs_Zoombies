@@ -10,10 +10,10 @@ public class Explosion {
     boolean activa;
     Entorno e;
 
-    public Explosion(double x, double y, Entorno e) {
+    public Explosion(double x, double y, Entorno e, double escala) {
         this.x = x;
         this.y = y;
-        this.escala = 0.7;
+        this.escala = escala;
         this.tiempoInicio = e.tiempo()/1000;
         this.duracion = 1; // segundos
         this.img = Herramientas.cargarImagen("Imagenes/explosion.gif");
