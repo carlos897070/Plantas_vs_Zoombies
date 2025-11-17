@@ -7,7 +7,7 @@ import entorno.Herramientas;
 
 public class BolaFuego {
 	
-	double x, y, escala, dx;
+	double x, y, escala, dx, angulo;
 	Image img, imgDaño;
 	Entorno e;
 	
@@ -21,11 +21,12 @@ public class BolaFuego {
 		this.escala = 0.38;
 		this.dx = 2;
 		this.imgDaño = Herramientas.cargarImagen("Imagenes/impacto.gif");
+		this.angulo = 0;
 	}
 	
 	public void dibujar()
 	{
-		e.dibujarImagen(img, this.x, this.y, 0, escala);
+		e.dibujarImagen(img, this.x, this.y, angulo, escala);
 	}
 	
 	public void mover()

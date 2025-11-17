@@ -6,26 +6,34 @@ import java.awt.Image;
 import entorno.Entorno;
 import entorno.Herramientas;
 
-public class Nuez {
-
-	double x, y, escala, dxA, vida;
-	Image img, exp;
+public class Carbonopodo {
+	
+	double x, y, escala, tiempoUltimoDisparo, intervaloDisparo, dxA, vida;
 	Entorno e;
-	boolean seleccion, plantada, seleccionadaParaMover;
+	Image [] img;
+	boolean seleccion, plantada, seleccionadaParaMover, disparando;
 	Color colorSeleccion;
 	
-	public Nuez(double x, double y, Entorno e) {
+	public Carbonopodo(double x, double y, Entorno e) {
+		
 		this.x = x;
 		this.y = y;
 		this.e = e;
-		this.img = Herramientas.cargarImagen("Imagenes/nuez.gif");
-		this.exp = Herramientas.cargarImagen("Imagenes/explosion.gif");
-		this.escala = 0.3;
+		this.escala	= 0.09;
+		this.img = new Image[] {
+			    Herramientas.cargarImagen("Imagenes/guisanteDark5.png"),
+			    Herramientas.cargarImagen("Imagenes/guisanteDark1.png"),
+			    Herramientas.cargarImagen("Imagenes/guisanteDark2.png"),
+			    Herramientas.cargarImagen("Imagenes/guisanteDark3.png")};
 		this.seleccion = false;
 		this.plantada = false;
-		this.colorSeleccion = new Color(200, 200, 20, 120);
+		this.tiempoUltimoDisparo = 0;
+		this.intervaloDisparo = 1.5;
+		this.seleccionadaParaMover = false;
+		this.colorSeleccion = new Color(0, 0, 0, 120);
 		this.dxA = 0;
-		this.vida = 10;
+		this.vida = 20;
+		this.disparando = false;
 	}
 	
 	public double rotacionSeleccion()
@@ -33,36 +41,47 @@ public class Nuez {
 		return this.dxA += 0.01;
 	}
 	
+	
+	//Metodo para dibujar la planta
+	
+	int frameActual = 0;
+	int contador = 0;
 	public void dibujar()
 	{
 		if(this.seleccion)
 		{
-			e.dibujarRectangulo(this.x-3, this.y+5, 109.616, 93.6, this.rotacionSeleccion() , colorSeleccion);
+			e.dibujarRectangulo(this.x, this.y, 109.616, 93.6, this.rotacionSeleccion() , colorSeleccion);
 		}
 		if (this.seleccionadaParaMover) 
 		{
-	        e.dibujarRectangulo(this.x-3, this.y+5, 109.616, 93.6, 0, colorSeleccion);
+	        e.dibujarRectangulo(this.x+2, this.y, 109.616, 93.6, 0, colorSeleccion);
 	    }
-		e.dibujarImagen(img, this.x, this.y, 0, escala);
+		e.dibujarImagen(img[frameActual], x, y, 0, escala);
+	    contador++;
+	    if (contador % 15 == 0) { // cambia cada 8 ciclos
+	        frameActual = (frameActual + 1) % img.length;
+	    }
 	}
 	
-	//Metodo para arrastrar la nuez
-		void arrastrar(double x,double y) {
-			this.x=x;
-			this.y=y;
-		
-    }
-		
+	//Metodo para arrastrar la planta
+	void arrastrar(double x,double y) {
+		this.x=x;
+		this.y=y;
+	
+	}
+	
 	//Metodo para saber si el mause esta encima de una planta
-	boolean encima(double mx, double my) {
-		double dist = Math.sqrt(Math.pow(mx - this.x, 2) + Math.pow(my - this.y, 2));  
+	public boolean encima(double mx, double my) {
+	    
+	    double dist = Math.sqrt(Math.pow(mx - this.x, 2) + Math.pow(my - this.y, 2));  
 
-	    return dist < 50;
+	    return dist < 30;
+	    
 	}
 	
 	public void nuevaPosicion(double nuevaX, double nuevaY) {
-	    this.x = nuevaX +5;
-	    this.y = nuevaY - 5;
+	    this.x = nuevaX;
+	    this.y = nuevaY;
 	}
 	
 	public void desplazarArriba(double nx, double ny)
@@ -88,7 +107,7 @@ public class Nuez {
 	
 	public void desplazarAbajo(double nx, double ny)
 	{
-		if(this.encima(e.mouseX(), e.mouseY()) && e.sePresionoBoton(e.BOTON_DERECHO))
+		if( this.encima(e.mouseX(), e.mouseY()) && e.sePresionoBoton(e.BOTON_DERECHO) )
 		{
 			this.seleccionadaParaMover = true;
 			
@@ -148,5 +167,6 @@ public class Nuez {
 			}	
 		}
 	}
-	
+
 }
+

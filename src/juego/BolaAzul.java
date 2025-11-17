@@ -7,7 +7,7 @@ import entorno.Herramientas;
 
 public class BolaAzul {
 
-	double x, y, escala, dx;
+	double x, y, escala, dx, angulo;
 	Image img, imgDaño;
 	Entorno e;
 	
@@ -24,7 +24,7 @@ public class BolaAzul {
 	
 	public void dibujar()
 	{
-		e.dibujarImagen(img, this.x, this.y, 0, escala);
+		e.dibujarImagen(img, this.x, this.y, angulo+=1, escala);
 	}
 	
 	public void mover()
