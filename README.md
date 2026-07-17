@@ -1,6 +1,6 @@
 ## Capturas
 
-![Pantalla principal](imagenes/pantalla_principal.png)
+![Pantalla principal](imagenes/juego.png)
 
 # Plantas vs. Zombies
 
