@@ -6,13 +6,9 @@ import java.awt.Image;
 import entorno.Entorno;
 import entorno.Herramientas;
 
-public class Nuez {
+public class Nuez extends Planta {
 
-	double x, y, escala, dxA, vida;
-	Image img, exp;
-	Entorno e;
-	boolean seleccion, plantada, seleccionadaParaMover;
-	Color colorSeleccion;
+	Image exp;
 	
 	public Nuez(double x, double y, Entorno e) {
 		this.x = x;
@@ -28,10 +24,6 @@ public class Nuez {
 		this.vida = 10;
 	}
 	
-	public double rotacionSeleccion()
-	{
-		return this.dxA += 0.01;
-	}
 	
 	public void dibujar()
 	{
@@ -46,107 +38,17 @@ public class Nuez {
 		e.dibujarImagen(img, this.x, this.y, 0, escala);
 	}
 	
-	//Metodo para arrastrar la nuez
-		void arrastrar(double x,double y) {
-			this.x=x;
-			this.y=y;
-		
-    }
 		
 	//Metodo para saber si el mause esta encima de una planta
-	boolean encima(double mx, double my) {
+	public boolean encima(double mx, double my) {
 		double dist = Math.sqrt(Math.pow(mx - this.x, 2) + Math.pow(my - this.y, 2));  
 
-	    return dist < 50;
+	    return dist < 30;
 	}
 	
 	public void nuevaPosicion(double nuevaX, double nuevaY) {
 	    this.x = nuevaX +5;
 	    this.y = nuevaY - 5;
-	}
-	
-	public void desplazarArriba(double nx, double ny)
-	{
-		if(this.encima(e.mouseX(), e.mouseY()) && e.sePresionoBoton(e.BOTON_DERECHO))
-		{
-			this.seleccionadaParaMover = true;
-			
-		}
-		if( ( !this.encima(e.mouseX(), e.mouseY()) ) && ( e.sePresionoBoton(e.BOTON_DERECHO) || e.sePresionoBoton(e.BOTON_IZQUIERDO) ) )
-		{
-			this.seleccionadaParaMover = false;
-		}
-		
-		if(this.seleccionadaParaMover)
-		{
-			if(e.sePresiono('w') )
-			{
-				this.nuevaPosicion(nx, ny);
-			}	
-		}
-	}
-	
-	public void desplazarAbajo(double nx, double ny)
-	{
-		if(this.encima(e.mouseX(), e.mouseY()) && e.sePresionoBoton(e.BOTON_DERECHO))
-		{
-			this.seleccionadaParaMover = true;
-			
-		}
-		if( ( !this.encima(e.mouseX(), e.mouseY()) ) && ( e.sePresionoBoton(e.BOTON_DERECHO) || e.sePresionoBoton(e.BOTON_IZQUIERDO) ) )
-		{
-			this.seleccionadaParaMover = false;
-		}
-		
-		if(this.seleccionadaParaMover)
-		{
-			if(e.sePresiono('s') )
-			{
-				this.nuevaPosicion(nx, ny);
-			}	
-		}
-	}
-	
-	public void desplazarDerecha(double nx, double ny)
-	{
-		if(this.encima(e.mouseX(), e.mouseY()) && e.sePresionoBoton(e.BOTON_DERECHO))
-		{
-			this.seleccionadaParaMover = true;
-			
-		}
-		if( ( !this.encima(e.mouseX(), e.mouseY()) ) && ( e.sePresionoBoton(e.BOTON_DERECHO) || e.sePresionoBoton(e.BOTON_IZQUIERDO) ) )
-		{
-			this.seleccionadaParaMover = false;
-		}
-		
-		if(this.seleccionadaParaMover)
-		{
-			if(e.sePresiono('d') )
-			{
-				this.nuevaPosicion(nx, ny);
-			}	
-		}
-	}
-	
-	public void desplazarIzquierda(double nx, double ny)
-	{
-		if(this.encima(e.mouseX(), e.mouseY()) && e.sePresionoBoton(e.BOTON_DERECHO))
-		{
-			this.seleccionadaParaMover = true;
-			
-		}
-		if( ( !this.encima(e.mouseX(), e.mouseY()) ) && ( e.sePresionoBoton(e.BOTON_DERECHO) || e.sePresionoBoton(e.BOTON_IZQUIERDO) ) )
-		{
-			this.seleccionadaParaMover = false;
-		}
-		
-		if(this.seleccionadaParaMover)
-		{
-			if(e.sePresiono('a') )
-			{
-				this.nuevaPosicion(nx, ny);
-			}	
-		}
 	}
 	
 }

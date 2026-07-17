@@ -5,11 +5,8 @@ import java.awt.Image;
 import entorno.Entorno;
 import entorno.Herramientas;
 
-public class Zombie {
+public class Zombie extends ZombieEstandar{
 
-	double x, y, escala, velocidad, vida, tiempoUltimoDisparo, intervaloDisparo;
-	Image img, explocion;
-	Entorno e;
 	
 	public Zombie(double x, double y, Entorno e) {
 		
@@ -24,20 +21,5 @@ public class Zombie {
 		this.tiempoUltimoDisparo = 0;
 		this.intervaloDisparo = 8;
 	}
-	public void dibujar()
-	{
-		e.dibujarImagen(img, this.x, this.y, 0, escala);
-	}
-	
-	public void mover()
-	{
-		this.x -= velocidad;
-	}
-	
-	public void muerto()
-	{
-		e.dibujarImagen(explocion, this.x, this.y, 0, 1);
-	}
-	
 	
 }

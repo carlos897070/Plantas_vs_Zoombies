@@ -5,12 +5,10 @@ import java.awt.Image;
 import entorno.Entorno;
 import entorno.Herramientas;
 
-public class BolaCarbon {
+public class BolaCarbon extends Proyectil {
 	
-	double x, y, escala, dx, dA;
-	Image[] img; 
-	Image imgDaño;
-	Entorno e;
+	double dA;
+	Image[] img;
 	
 	
 	public BolaCarbon(double x, double y, Entorno e) {
@@ -47,9 +45,5 @@ public class BolaCarbon {
 	    }
 	}
 	
-	public void mover()
-	{
-		this.x += dx;
-	}
 
 }

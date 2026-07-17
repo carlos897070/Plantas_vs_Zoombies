@@ -5,11 +5,9 @@ import java.awt.Image;
 import entorno.Entorno;
 import entorno.Herramientas;
 
-public class ZombieColosal {
+public class ZombieColosal extends ZombieEstandar {
 
-	double x, y, escala, vida, velocidad, ultimoTiempoDisparo, intervaloDisparo;
-	Image img, disco;
-	Entorno e;
+	Image disco;
 	
 	
 	public ZombieColosal(double x, double y, Entorno e) {
@@ -22,20 +20,8 @@ public class ZombieColosal {
 		this.velocidad = 0.2;
 		this.img = Herramientas.cargarImagen("Imagenes/zombieJefe.gif");
 		this.disco = Herramientas.cargarImagen("Imagenes/discoAzul.gif");
-		this.ultimoTiempoDisparo = 0;
+		this.tiempoUltimoDisparo = 0;
 		this.intervaloDisparo = 13;
 	}
-	
-	public void dibujar()
-	{
-		//e.dibujarImagen(disco, this.x, this.y, 0, 2);
-		e.dibujarImagen(img, this.x, this.y, 0, escala);
-	}
-	
-	public void mover()
-	{
-		this.x -= velocidad;
-	}
-	
 	
 }

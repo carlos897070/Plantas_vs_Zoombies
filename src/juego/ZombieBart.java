@@ -5,11 +5,7 @@ import java.awt.Image;
 import entorno.Entorno;
 import entorno.Herramientas;
 
-public class ZombieBart {
-
-	double x, y, escala, velocidad, vida, tiempoUltimoDisparo, intervaloDisparo;
-	Image img;
-	Entorno e;
+public class ZombieBart extends ZombieEstandar {
 	
 public ZombieBart(double x, double y, Entorno e) {
 		
@@ -24,14 +20,6 @@ public ZombieBart(double x, double y, Entorno e) {
 		this.intervaloDisparo = 10;
 		
 	}
-	public void dibujar()
-	{
-		e.dibujarImagen(img, this.x, this.y, 0, escala);
-	}
-	
-	public void mover()
-	{
-		this.x -= velocidad;
-	}
+
 	
 }

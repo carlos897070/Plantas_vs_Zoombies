@@ -5,11 +5,7 @@ import java.awt.Image;
 import entorno.Entorno;
 import entorno.Herramientas;
 
-public class BolaAzul {
-
-	double x, y, escala, dx, angulo;
-	Image img, imgDaño;
-	Entorno e;
+public class BolaAzul extends Proyectil {
 	
 	public BolaAzul(double x, double y, Entorno e) {
 
@@ -22,13 +18,4 @@ public class BolaAzul {
 		this.imgDaño = Herramientas.cargarImagen("Imagenes/impacto.gif");
 	}
 	
-	public void dibujar()
-	{
-		e.dibujarImagen(img, this.x, this.y, angulo+=1, escala);
-	}
-	
-	public void mover()
-	{
-		this.x += dx;
-	}
 }
