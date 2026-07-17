@@ -1,3 +1,7 @@
+## Capturas
+
+![Pantalla principal](imagenes/pantalla_principal.png)
+
 # Plantas vs. Zombies
 
 Simulación del juego **Plantas vs. Zombies** desarrollada en **Java** como proyecto de la materia **Programación I**.
